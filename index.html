@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Data Governance — Data Analysis Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0A0812; --bg-2:#0D0A16; --ink:#0A0812;
+  --glass:rgba(255,255,255,.045); --glass-2:rgba(255,255,255,.07); --glass-3:rgba(255,255,255,.10);
+  --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.06); --line-str:rgba(255,255,255,.16);
+  --tx:#F4EEF1; --tx-mut:#A99DAA; --tx-dim:#7A7183; --tx-inv:#F4EEF1; --tx-inv-mut:#A99DAA;
+  --warm:#E67E4D; --warm-2:#F2A968; --amber:#F2A968; --magenta:#C85B9C;
+  --teal:#5FD6C6; --violet:#9B6FE0;
+  --cobalt:#E67E4D; --cobalt-2:#F2A968; --cobalt-3:#F6C08A; --cobalt-soft:rgba(230,126,77,.14);
+  --good:#3FD99A; --ok:#F2C24B; --warn:#F2914B; --bad:#F2605A;
+  --grad:linear-gradient(120deg,#E67E4D,#F2A968); --grad-hero:linear-gradient(115deg,#F2A968,#E0724F 45%,#C85B9C 80%);
+  --r:16px; --r-sm:11px; --r-xs:8px;
+  --d:'Bricolage Grotesque',system-ui,sans-serif; --b:'Inter',system-ui,sans-serif; --m:'IBM Plex Mono',ui-monospace,monospace;
+  --sh:0 2px 8px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.34);
+  --sh-lg:0 40px 100px rgba(0,0,0,.55);
+  --glow:0 0 40px rgba(230,126,77,.28);
+  --sidebar:252px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--b);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;position:relative;overflow-x:hidden}
+/* ambient aurora behind everything */
+body:before{content:"";position:fixed;inset:-20% -10% -10% -10%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(48% 40% at 22% 12%, rgba(242,169,104,.20), transparent 60%),
+    radial-gradient(46% 42% at 82% 8%, rgba(200,91,156,.16), transparent 62%),
+    radial-gradient(50% 46% at 70% 78%, rgba(95,214,198,.10), transparent 64%),
+    radial-gradient(60% 50% at 30% 88%, rgba(155,111,224,.12), transparent 66%);
+  filter:blur(40px);animation:aurora 22s ease-in-out infinite alternate}
+@keyframes aurora{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(2%,-1%,0) scale(1.06)}100%{transform:translate3d(-2%,1%,0) scale(1.02)}}
+.hidden{display:none!important}
+button{font-family:inherit}
+::selection{background:rgba(242,169,104,.3)}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px}::-webkit-scrollbar-track{background:transparent}
+
+/* ============ CINEMATIC LANDING ============ */
+#landing{min-height:100vh;position:relative;overflow-y:auto;overflow-x:hidden;z-index:1;display:flex;flex-direction:column}
+#landing .grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:58px 58px;mask-image:radial-gradient(1100px 700px at 60% 40%,#000,transparent 82%);animation:drift 50s linear infinite}
+@keyframes drift{to{background-position:580px 580px}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(16px)}to{transform:translateY(0)}}
+@keyframes wordIn2{from{transform:translateY(20px)}to{transform:translateY(0)}}
+.mega-word{position:absolute;top:50%;left:50%;transform:translate(-50%,-54%);font-family:var(--d);font-weight:800;font-size:min(30vw,420px);letter-spacing:-.04em;line-height:1;color:transparent;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.008));-webkit-background-clip:text;background-clip:text;white-space:nowrap;pointer-events:none;z-index:1;user-select:none;opacity:0;animation:megaIn 1.6s .1s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes megaIn{from{opacity:0;letter-spacing:.1em;transform:translate(-50%,-54%) scale(1.06)}to{opacity:1;letter-spacing:-.04em;transform:translate(-50%,-54%) scale(1)}}
+.hero-top{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:24px 34px}
+.hero-brand{display:flex;align-items:center;gap:10px;font-family:var(--m);font-size:12px;letter-spacing:.22em;color:var(--tx);text-transform:uppercase}
+.hero-brand .dotmk{width:11px;height:11px;border-radius:50%;background:var(--grad);box-shadow:0 0 14px rgba(242,169,104,.8)}
+.hero-top-note{font-family:var(--m);font-size:11px;letter-spacing:.14em;color:var(--tx-dim);text-transform:uppercase}
+.hero{flex:1;position:relative;z-index:4;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:20px;max-width:1200px;width:100%;margin:0 auto;padding:20px 40px 40px}
+.btn.small{padding:9px 16px;font-size:13px}
+.upload-card{margin-top:22px;border:1.5px dashed var(--line-str);border-radius:var(--r);background:var(--glass);padding:24px 22px;text-align:center;transition:.25s;cursor:pointer;backdrop-filter:blur(14px);animation:slideUp .6s .2s both}
+.upload-card:hover,.upload-card.hover{border-color:var(--amber);background:rgba(242,169,104,.09);box-shadow:var(--glow)}
+.upload-card .uic{width:34px;height:34px;color:var(--amber);margin-bottom:10px}
+.upload-card .uc-title{font-family:var(--d);font-weight:700;font-size:18px;color:#fff;margin-bottom:3px}
+.upload-card .uc-sub{color:var(--tx-mut);font-size:13px;margin-bottom:16px}
+@media(max-width:900px){.upload-card{margin-left:auto;margin-right:auto;max-width:440px}}
+@media(max-width:900px){.hero{grid-template-columns:1fr;text-align:center;gap:0;padding:0 22px}.mega-word{font-size:44vw}}
+
+/* ---- the governor orb ---- */
+.orb-stage{position:relative;width:min(46vh,430px);height:min(46vh,430px);margin:0 auto;justify-self:center;opacity:0;animation:orbIn 1.4s .35s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes orbIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.orb-stage>*{position:absolute;top:50%;left:50%}
+.orb-glow{width:150%;height:150%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(242,169,104,.4),rgba(200,91,156,.16) 42%,transparent 68%);filter:blur(26px);animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+.orb-core{width:52%;height:52%;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(circle at 36% 30%, #ffd9b0 0%, #F2A968 22%, #E0724F 52%, #7a2f38 82%, #2a1220 100%);
+  box-shadow:inset -14px -18px 40px rgba(0,0,0,.55), inset 10px 12px 30px rgba(255,220,180,.35), 0 0 60px rgba(230,126,77,.5);
+  animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-8px)}}
+.orb-shine{width:52%;height:52%;transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;opacity:.5;
+  background:conic-gradient(from 0deg,transparent,rgba(255,220,180,.5),transparent 40%,rgba(200,91,156,.4),transparent 70%);animation:spinCW 9s linear infinite}
+.orb-grid{width:52%;height:52%;transform:translate(-50%,-50%);border-radius:50%;opacity:.3;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent 0 9px,rgba(0,0,0,.25) 9px 10px),repeating-linear-gradient(90deg,transparent 0 9px,rgba(0,0,0,.2) 9px 10px);
+  -webkit-mask:radial-gradient(circle,#000 60%,transparent 72%);mask:radial-gradient(circle,#000 60%,transparent 72%);animation:spinCCW 30s linear infinite}
+.orb-ring{border-radius:50%;border:1.5px solid rgba(242,169,104,.35)}
+.orb-ring .orb-ball{position:absolute;top:-6px;left:calc(50% - 6px);width:12px;height:12px;border-radius:50%;background:var(--grad);box-shadow:0 0 16px rgba(242,169,104,.9)}
+.rr1{width:84%;height:84%;transform:translate(-50%,-50%) rotateX(72deg) rotateZ(0deg);animation:spinZ1 7s linear infinite;border-color:rgba(242,169,104,.4)}
+.rr2{width:104%;height:104%;transform:translate(-50%,-50%) rotateX(66deg) rotateZ(60deg);animation:spinZ2 11s linear infinite reverse;border-color:rgba(200,91,156,.34)}
+.rr2 .orb-ball{background:linear-gradient(120deg,#C85B9C,#9B6FE0);box-shadow:0 0 16px rgba(200,91,156,.9)}
+.rr3{width:126%;height:126%;transform:translate(-50%,-50%) rotateX(78deg) rotateZ(-40deg);animation:spinZ3 15s linear infinite;border-color:rgba(95,214,198,.3)}
+.rr3 .orb-ball{background:linear-gradient(120deg,#5FD6C6,#3FD99A);box-shadow:0 0 16px rgba(95,214,198,.9)}
+@keyframes spinZ1{to{transform:translate(-50%,-50%) rotateX(72deg) rotateZ(360deg)}}
+@keyframes spinZ2{from{transform:translate(-50%,-50%) rotateX(66deg) rotateZ(60deg)}to{transform:translate(-50%,-50%) rotateX(66deg) rotateZ(420deg)}}
+@keyframes spinZ3{from{transform:translate(-50%,-50%) rotateX(78deg) rotateZ(-40deg)}to{transform:translate(-50%,-50%) rotateX(78deg) rotateZ(320deg)}}
+@keyframes spinCW{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes spinCCW{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+.orb-spark{width:4px;height:4px;border-radius:50%;background:#ffe6c8;box-shadow:0 0 8px #F2A968;opacity:.8;animation:twinkle 3.4s ease-in-out infinite}
+.orb-spark.s1{transform:translate(-260%,-320%)}.orb-spark.s2{transform:translate(300%,-180%);animation-delay:.8s}
+.orb-spark.s3{transform:translate(-320%,240%);animation-delay:1.6s}.orb-spark.s4{transform:translate(280%,300%);animation-delay:2.3s}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.7) translate(var(--x,0),var(--y,0))}50%{opacity:.9}}
+
+/* ---- hero copy ---- */
+.hero-copy{position:relative;z-index:4}
+@media(max-width:900px){.hero-copy{padding:26px 0 0}.orb-stage{width:min(40vh,320px);height:min(40vh,320px);margin-top:10px}}
+.eyebrow-l{font-family:var(--m);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber);margin-bottom:18px;animation:slideUp .6s both}
+.hero-h1{font-family:var(--d);font-weight:700;font-size:clamp(40px,5.6vw,74px);line-height:.98;letter-spacing:-.035em;margin:0 0 20px;color:#fff}
+.hero-h1 .w{display:inline-block;animation:wordIn2 .7s cubic-bezier(.2,.7,.2,1) both}
+.hero-h1 .w.gr{background:var(--grad-hero);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-h1 .w:nth-child(1){animation-delay:.55s}.hero-h1 .w:nth-child(2){animation-delay:.62s}.hero-h1 .w:nth-child(3){animation-delay:.69s}
+.hero-h1 .w:nth-child(5){animation-delay:.78s}.hero-h1 .w:nth-child(6){animation-delay:.85s}.hero-h1 .w:nth-child(7){animation-delay:.92s}.hero-h1 .w:nth-child(8){animation-delay:.99s}
+@keyframes wordIn{to{opacity:1;transform:translateY(0)}}
+.lede{font-size:clamp(15px,2vw,18.5px);color:var(--tx-mut);max-width:480px;margin:0 0 30px;animation:slideUp .6s .1s both}
+@media(max-width:900px){.lede{margin-left:auto;margin-right:auto}}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;border-radius:var(--r);transition:.25s}
+@media(max-width:900px){.cta-row{justify-content:center}}
+#dz.hover{outline:1.5px dashed var(--amber);outline-offset:8px;background:rgba(242,169,104,.06)}
+.btn.big{padding:15px 28px;font-size:15px}
+.landing-note{margin-top:20px;font-size:12px;color:var(--tx-dim);opacity:0;animation:up .8s 1.3s forwards}
+@media(max-width:900px){.landing-note{text-align:center}}
+#landing-err{margin-top:14px}
+.scroll-cue{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:24px;height:38px;border:1.5px solid rgba(255,255,255,.25);border-radius:14px;z-index:5;opacity:.6}
+.scroll-cue span{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:4px;height:8px;border-radius:3px;background:var(--amber);animation:scrolldot 1.6s ease-in-out infinite}
+@keyframes scrolldot{0%{opacity:0;top:7px}30%{opacity:1}60%{opacity:1;top:20px}100%{opacity:0;top:20px}}
+#landing.leaving{animation:heroLeave .6s cubic-bezier(.5,0,.75,0) forwards}
+@keyframes heroLeave{to{opacity:0;transform:scale(1.04)}}
+
+/* ============ PROCESSING OVERLAY ============ */
+#overlay{position:fixed;inset:0;z-index:60;background:rgba(10,8,18,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center}
+.proc{width:min(460px,90vw);text-align:left;background:var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:30px;backdrop-filter:blur(20px);box-shadow:var(--sh-lg)}
+.proc h4{font-family:var(--d);font-weight:700;font-size:22px;margin:0 0 4px;text-align:center;color:#fff}
+.proc .psub{text-align:center;color:var(--tx-mut);font-size:13px;margin-bottom:26px}
+.proc .track{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:24px}
+.proc .track .fill{height:100%;width:0;background:var(--grad);transition:width .4s;box-shadow:0 0 12px rgba(242,169,104,.7)}
+.pstage{display:flex;align-items:center;gap:13px;padding:8px 0;opacity:.32;transition:.35s}
+.pstage.on{opacity:1}
+.pstage .dot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.14);display:grid;place-items:center;flex:none;transition:.3s}
+.pstage.on .dot{border-color:var(--amber);box-shadow:0 0 14px rgba(242,169,104,.5)}
+.pstage.done .dot{background:var(--grad);border-color:transparent}
+.pstage .dot svg{width:12px;height:12px;color:#1a0f0a;opacity:0;transition:.2s}
+.pstage.done .dot svg{opacity:1}
+.pstage .dot .spin{width:10px;height:10px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--amber);border-radius:50%;animation:sp .6s linear infinite;display:none}
+.pstage.on:not(.done) .dot .spin{display:block}
+.pstage .lbl{font-family:var(--m);font-size:13px;letter-spacing:.02em;color:var(--tx)}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ============ APP SHELL ============ */
+#app{display:grid;grid-template-columns:var(--sidebar) 1fr;min-height:100vh;position:relative;z-index:1}
+.sidebar{background:rgba(12,10,20,.72);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:22px 16px;overflow-y:auto}
+.sb-brand{display:flex;align-items:center;gap:11px;padding:0 8px 22px}
+.sb-brand .mk{width:34px;height:34px;flex:none}
+.sb-brand h1{font-family:var(--d);font-weight:700;font-size:16px;margin:0;line-height:1.05;color:#fff;letter-spacing:-.01em}
+.sb-brand .s{font-family:var(--m);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--tx-dim);margin-top:3px}
+.sb-sec{font-family:var(--m);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--tx-dim);padding:14px 12px 8px}
+.nav{list-style:none;margin:0;padding:0}
+.nav li{position:relative}
+.nav button{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;color:var(--tx-mut);font-size:14px;font-weight:500;padding:11px 12px;border-radius:var(--r-sm);cursor:pointer;transition:.18s;text-align:left}
+.nav button:hover{background:var(--glass-2);color:#fff}
+.nav button.active{background:var(--cobalt-soft);color:#fff}
+.nav button .ic{width:18px;height:18px;flex:none;stroke-width:1.9}
+.nav button.active .ic{color:var(--amber)}
+.nav button .chip{margin-left:auto;font-family:var(--m);font-size:10px;background:rgba(255,255,255,.12);padding:1px 7px;border-radius:20px}
+.sb-foot{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:9px}
+.sb-foot .btn{width:100%;font-size:13px;padding:10px}
+.sb-score{margin:6px 8px 14px;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 15px}
+.sb-score .k{font-family:var(--m);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx-dim)}
+.sb-score .v{font-family:var(--m);font-weight:600;font-size:27px;margin-top:3px}
+.sb-score .band{font-family:var(--d);font-weight:700;font-size:11px;padding:2px 10px;border-radius:20px;display:inline-block;margin-top:5px}
+
+.shell{min-width:0;display:flex;flex-direction:column}
+.statusbar{background:rgba(12,10,20,.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:24px;padding:0 30px;height:62px}
+.statusbar .vtitle{font-family:var(--d);font-weight:700;font-size:19px;letter-spacing:-.01em;color:#fff}
+.statusbar .meta{margin-left:auto;display:flex;gap:22px}
+.statusbar .st{display:flex;flex-direction:column}
+.statusbar .st .k{font-family:var(--m);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--tx-dim)}
+.statusbar .st .v{font-family:var(--m);font-size:13.5px;font-weight:600;color:var(--tx)}
+.content{padding:32px 30px 60px;max-width:1200px;width:100%}
+@media(max-width:920px){#app{grid-template-columns:1fr}.sidebar{position:fixed;z-index:50;transform:translateX(-100%);transition:.28s;width:252px}.sidebar.open{transform:none}.statusbar{padding:0 16px}.content{padding:22px 16px 60px}.burger{display:grid!important}}
+.burger{display:none;place-items:center;width:38px;height:38px;border:1px solid var(--line);border-radius:var(--r-xs);background:var(--glass-2);color:var(--tx);cursor:pointer}
+
+/* view transitions */
+.view{display:none;animation:viewIn .5s cubic-bezier(.2,.7,.3,1)}
+.view.show{display:block}
+@keyframes viewIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(16px);animation:up .6s forwards}
+
+.vhead{margin:0 0 22px}
+.vhead .eb{font-family:var(--m);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);font-weight:600}
+.vhead h2{font-family:var(--d);font-weight:700;font-size:30px;letter-spacing:-.025em;margin:5px 0 7px;color:#fff}
+.vhead p{color:var(--tx-mut);margin:0;font-size:15px;max-width:660px}
+
+/* cards / tiles (glass) */
+.card{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.pad{padding:22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.tile{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:18px 19px;box-shadow:var(--sh);backdrop-filter:blur(14px);position:relative;overflow:hidden}
+.tile:before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:.5}
+.tile .k{font-family:var(--m);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--tx-dim)}
+.tile .v{font-family:var(--m);font-weight:600;font-size:28px;margin-top:8px;letter-spacing:-.02em;color:#fff}
+.tile .v small{font-size:13px;color:var(--tx-mut);font-weight:500}
+.tile .foot{font-size:12px;color:var(--tx-mut);margin-top:3px}
+
+/* overview hero */
+.hero{display:grid;grid-template-columns:340px 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:760px){.hero{grid-template-columns:1fr}}
+.gcard{position:relative;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:var(--r);padding:26px;text-align:center;box-shadow:var(--sh);overflow:hidden;backdrop-filter:blur(16px)}
+.gcard:before{content:"";position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:280px;height:280px;background:radial-gradient(circle,rgba(242,169,104,.22),transparent 65%);pointer-events:none}
+.gauge-wrap{width:250px;height:146px;margin:2px auto 0;position:relative;z-index:1}
+.gnum{font-family:var(--m);font-weight:600;font-size:48px;margin-top:-4px;letter-spacing:-.02em;position:relative;z-index:1}
+.gband{font-family:var(--d);font-weight:700;font-size:14px;padding:4px 15px;border-radius:20px;display:inline-block;margin-top:5px;position:relative;z-index:1}
+.gband.good,.sb-score .band.good{background:rgba(63,217,154,.16);color:#6ee7b4;box-shadow:0 0 20px rgba(63,217,154,.25)}
+.gband.ok,.sb-score .band.ok{background:rgba(242,194,75,.18);color:#f4d06b;box-shadow:0 0 20px rgba(242,194,75,.22)}
+.gband.warn,.sb-score .band.warn{background:rgba(242,145,75,.18);color:#f6ab74;box-shadow:0 0 20px rgba(242,145,75,.22)}
+.gband.bad,.sb-score .band.bad{background:rgba(242,96,90,.2);color:#f68e89;box-shadow:0 0 20px rgba(242,96,90,.25)}
+.gcap{color:var(--tx-mut);font-size:12px;margin-top:16px;line-height:1.5;position:relative;z-index:1}
+
+/* insight cards */
+.ins{display:flex;gap:13px;align-items:flex-start;background:var(--glass);border:1px solid var(--line);border-left-width:3px;border-radius:var(--r-sm);padding:15px 18px;box-shadow:var(--sh);backdrop-filter:blur(12px)}
+.ins.trend{border-left-color:var(--amber)} .ins.quality{border-left-color:var(--ok)} .ins.stat{border-left-color:var(--teal)}
+.ins .tag{font-family:var(--m);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-dim);flex:none;width:58px;padding-top:3px}
+.ins p{margin:0;font-size:14.5px;color:var(--tx)}
+.ins p b{color:#fff}
+.stack{display:grid;gap:12px}
+
+/* log */
+.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line-2)}
+.log li:last-child{border-bottom:0}
+.log .chk{width:18px;height:18px;flex:none;margin-top:1px;color:var(--good)}
+.log .op{font-weight:600;font-size:14px;color:#fff} .log .dt{color:var(--tx-mut);font-size:13px}
+
+/* table */
+.tbl-scroll{overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,.02)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:10px 13px;white-space:nowrap}
+thead th{font-family:var(--m);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx-dim);background:rgba(255,255,255,.03);position:sticky;top:0;border-bottom:1px solid var(--line)}
+tbody tr:nth-child(even){background:rgba(255,255,255,.02)} tbody td{border-bottom:1px solid var(--line-2);color:var(--tx)}
+td.num{font-family:var(--m);text-align:right}
+.pill{font-family:var(--m);font-size:10.5px;padding:2px 9px;border-radius:20px}
+.pill.numeric{background:rgba(242,169,104,.16);color:#f4b57e}.pill.categorical{background:rgba(155,111,224,.18);color:#b79aec}.pill.datetime{background:rgba(95,214,198,.16);color:#7fe0d2}.pill.boolean{background:rgba(242,145,75,.16);color:#f6ab74}.pill.text{background:rgba(255,255,255,.08);color:var(--tx-mut)}.pill.empty{background:rgba(242,96,90,.16);color:#f68e89}
+.bar-cell{position:relative;min-width:80px}.bar-cell .f{position:absolute;left:0;top:4px;bottom:4px;background:rgba(242,169,104,.28);border-radius:3px}.bar-cell span{position:relative;font-family:var(--m)}
+
+/* charts */
+.chart{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px 6px;box-shadow:var(--sh);backdrop-filter:blur(12px)}
+.chart h4{font-family:var(--d);font-weight:600;font-size:14px;margin:9px 8px 2px;color:#fff}
+.chart .plot{width:100%;height:300px}
+.chart.tall .plot{height:360px}
+
+/* ML panels */
+.ml-panel{margin-bottom:18px}
+.ml-panel .phead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.ml-panel .phead h3{font-family:var(--d);font-weight:700;font-size:20px;margin:0;color:#fff}
+.ml-panel .phead .badge{font-family:var(--m);font-size:10.5px;color:#1a0f0a;background:var(--grad);padding:2px 10px;border-radius:20px;font-weight:600}
+.ml-body{display:grid;grid-template-columns:1fr 288px;gap:16px}
+@media(max-width:820px){.ml-body{grid-template-columns:1fr}}
+.ml-metrics{display:flex;flex-direction:column;gap:11px}
+.ml-metric{background:var(--glass);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;box-shadow:var(--sh)}
+.ml-metric .k{font-family:var(--m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-dim)}
+.ml-metric .v{font-family:var(--m);font-weight:600;font-size:22px;margin-top:4px;color:#fff}
+.takeaway{background:var(--cobalt-soft);border:1px solid rgba(242,169,104,.28);border-radius:var(--r-sm);padding:13px 15px;font-size:13.5px;color:#f0d9c8}
+.takeaway b{color:var(--amber)}
+
+/* governance */
+.gov{display:grid;grid-template-columns:340px 1fr;gap:0;background:linear-gradient(150deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-lg);backdrop-filter:blur(16px)}
+@media(max-width:700px){.gov{grid-template-columns:1fr}}
+.gov .left{position:relative;padding:30px;text-align:center;border-right:1px solid var(--line)}
+.gov .left:before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(242,169,104,.2),transparent 65%);pointer-events:none}
+@media(max-width:700px){.gov .left{border-right:0;border-bottom:1px solid var(--line)}}
+.gov .right{padding:28px 30px}
+.gov .right h3{font-family:var(--d);font-weight:700;font-size:17px;margin:0 0 3px;color:#fff}
+.gov .right .lead{color:var(--tx-mut);font-size:13px;margin:0 0 20px}
+.part{margin-bottom:14px}
+.part .top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}
+.part .nm{font-weight:500;color:var(--tx)} .part .hint{color:var(--tx-dim);font-size:11px}
+.part .val{font-family:var(--m);font-weight:600;font-size:13px;color:#fff}
+.trk{height:7px;border-radius:5px;background:rgba(255,255,255,.08);margin-top:6px;overflow:hidden}
+.trk .f{height:100%;border-radius:5px;width:0;transition:width 1s cubic-bezier(.2,.7,.3,1)}
+.verdict{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);font-size:14.5px;color:var(--tx)}
+.method{color:var(--tx-dim);font-size:12.5px;margin-top:16px;line-height:1.6}
+
+/* chat */
+.chat{display:flex;flex-direction:column;height:calc(100vh - 62px - 60px);min-height:470px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip-q{font-size:12.5px;background:var(--glass);border:1px solid var(--line);border-radius:20px;padding:7px 14px;cursor:pointer;transition:.16s;color:var(--tx)}
+.chip-q:hover{border-color:var(--amber);background:var(--cobalt-soft);color:#fff}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:6px 2px 16px}
+.msg{max-width:82%;animation:up .4s}
+.msg.user{align-self:flex-end}
+.msg .bubble{padding:12px 16px;border-radius:16px;font-size:14.5px}
+.msg.user .bubble{background:var(--grad);color:#1a0f0a;border-bottom-right-radius:5px;font-weight:500}
+.msg.bot .bubble{background:var(--glass-2);border:1px solid var(--line);color:var(--tx);border-bottom-left-radius:5px;backdrop-filter:blur(12px)}
+.msg .bubble b{font-weight:600;color:#fff}
+.msg.bot .who{font-family:var(--m);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-dim);margin:0 0 5px 4px}
+.msg .mplot{width:100%;height:280px;margin-top:10px;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-sm)}
+.typing{display:flex;gap:4px;padding:14px 16px}
+.typing span{width:7px;height:7px;background:var(--tx-mut);border-radius:50%;animation:blink 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.chat-in{display:flex;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.chat-in input{flex:1;border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 16px;font-family:var(--b);font-size:14.5px;outline:none;background:var(--glass);color:var(--tx)}
+.chat-in input::placeholder{color:var(--tx-dim)}
+.chat-in input:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--cobalt-soft)}
+
+.err{background:rgba(242,96,90,.14);border:1px solid rgba(242,96,90,.35);color:#f6a8a3;border-radius:var(--r-sm);padding:12px 14px;font-size:14px}
+
+/* ---- motion & polish ---- */
+.tile,.ins,.ml-metric,.chart{transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s,border-color .24s}
+.tile:hover,.ins:hover,.ml-metric:hover{transform:translateY(-4px);border-color:var(--line-str);box-shadow:0 20px 46px rgba(0,0,0,.5)}
+.chart:hover{transform:translateY(-3px);border-color:var(--line-str);box-shadow:0 22px 50px rgba(0,0,0,.5)}
+.btn:active{transform:translateY(0) scale(.97)}
+.chart{opacity:0;transform:scale(.98) translateY(10px);animation:chartIn .55s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes chartIn{to{opacity:1;transform:none}}
+.chip-q{opacity:0;animation:up .45s forwards}
+.gband{position:relative;overflow:hidden}
+.gband:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.4) 50%,transparent 80%);transform:translateX(-120%);animation:shine 3.6s ease-in-out 1s infinite}
+@keyframes shine{to{transform:translateX(120%)}}
+.nav button{position:relative;overflow:hidden}
+.nav button:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--grad);transform:scaleY(0);transition:transform .22s}
+.nav button.active:before{transform:scaleY(1)}
+.caret{display:inline-block;width:7px;height:1.05em;background:var(--amber);vertical-align:-2px;margin-left:1px;animation:blink 1s steps(2) infinite;border-radius:1px;box-shadow:0 0 8px rgba(242,169,104,.7)}
+.msg .bubble ul{margin:6px 0 0;padding-left:2px;list-style:none}
+.msg .bubble li{padding:2px 0}
+.fu-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.fu{font-size:12px;background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:5px 12px;cursor:pointer;color:var(--amber);transition:.15s;opacity:0;animation:up .45s forwards}
+.fu:hover{background:var(--cobalt-soft);border-color:var(--amber);color:#fff}
+.ai-controls{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.toggle{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:var(--tx);user-select:none}
+.toggle .sw{width:38px;height:22px;border-radius:20px;background:rgba(255,255,255,.14);position:relative;transition:.2s;flex:none}
+.toggle .sw:after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.toggle.on .sw{background:var(--grad)} .toggle.on .sw:after{left:19px}
+.ai-badge{font-family:var(--m);font-size:10px;letter-spacing:.1em;background:var(--grad);color:#1a0f0a;padding:2px 9px;border-radius:20px;font-weight:600;box-shadow:0 0 16px rgba(242,169,104,.4)}
+.link-btn{background:none;border:0;color:var(--tx-mut);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:4px}
+.link-btn:hover{color:var(--amber)}
+.modal-bg{position:fixed;inset:0;z-index:70;background:rgba(6,5,11,.72);backdrop-filter:blur(6px);display:grid;place-items:center;animation:fade .22s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{background:rgba(20,17,28,.96);border:1px solid var(--line);border-radius:var(--r);width:min(440px,92vw);box-shadow:var(--sh-lg);backdrop-filter:blur(24px);animation:modalIn .3s cubic-bezier(.2,.8,.3,1)}
+@keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+.modal .mhead{padding:22px 24px 0} .modal .mhead h3{font-family:var(--d);font-weight:700;font-size:20px;margin:0 0 3px;color:#fff}
+.modal .mhead p{color:var(--tx-mut);font-size:13px;margin:0}
+.modal .mbody{padding:18px 24px}
+.field{margin-bottom:14px} .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;color:var(--tx)}
+.field input,.field select{width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-family:var(--b);font-size:14px;outline:none;background:var(--glass);color:var(--tx)}
+.field input:focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--cobalt-soft)}
+.field select option{background:#161320;color:var(--tx)}
+.field .hint{font-size:11.5px;color:var(--tx-dim);margin-top:5px}
+.field .hint code{color:var(--amber)}
+.modal .mfoot{padding:0 24px 22px;display:flex;gap:10px;justify-content:flex-end}
+.sb-brand .mk{animation:pulseMk 5s ease-in-out infinite}
+@keyframes pulseMk{0%,100%{filter:drop-shadow(0 0 0 rgba(242,169,104,0))}50%{filter:drop-shadow(0 0 8px rgba(242,169,104,.6))}}
+#report-text{background:rgba(255,255,255,.03)!important;color:var(--tx)!important;border-color:var(--line)!important}
+/* ---- printable report (Save as PDF) ---- */
+#print-report{display:none}
+@media print{
+  @page{margin:14mm}
+  html,body{background:#fff!important}
+  body:before{display:none!important}
+  #app,#landing,#overlay,.modal-bg,.burger{display:none!important}
+  #print-report{display:block!important;color:#111;font-family:'Inter',system-ui,sans-serif}
+  #print-report *{color:#111}
+}
+#print-report{font-family:'Inter',system-ui,sans-serif;color:#111;background:#fff;padding:0}
+.pr-head{border-bottom:3px solid #E67E4D;padding-bottom:14px;margin-bottom:22px}
+.pr-head .brand{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#E0724F}
+.pr-head h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:30px;margin:6px 0 4px}
+.pr-head .meta{font-size:12px;color:#555;font-family:'IBM Plex Mono',monospace}
+.pr-score{display:flex;align-items:center;gap:20px;background:#FAF6F2;border:1px solid #EADFD6;border-radius:12px;padding:18px 22px;margin-bottom:22px}
+.pr-score .big{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:46px;line-height:1}
+.pr-score .band{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14px;padding:3px 12px;border-radius:20px;display:inline-block}
+.pr-score .verdict{font-size:14px;color:#333;margin-top:4px;max-width:520px}
+#print-report h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;margin:22px 0 10px;padding-bottom:5px;border-bottom:1px solid #E5E5E5;page-break-after:avoid}
+.pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 26px;font-size:13px}
+.pr-grid .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #F0F0F0}
+.pr-grid .row .k{color:#555} .pr-grid .row .v{font-family:'IBM Plex Mono',monospace;font-weight:500}
+#print-report ul{margin:6px 0;padding-left:18px;font-size:13px} #print-report li{padding:2px 0}
+#print-report table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
+#print-report th{text-align:left;background:#F5F1ED;border-bottom:1px solid #E5E5E5;padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#666}
+#print-report td{border-bottom:1px solid #F0F0F0;padding:5px 8px}
+.pr-foot{margin-top:26px;padding-top:12px;border-top:1px solid #E5E5E5;font-size:11px;color:#888}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .upload-card,.eyebrow-l,.lede,.landing-note,.hero-top,.cta-row,.reveal,.hero-h1 .w,.orb-stage,.chip-q,.fu,.chart,.mega-word,.scroll-cue,.landing-drop{opacity:1!important;transform:none!important}
+}
+.rv-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px}
+.rv-field{flex:1 1 200px;display:flex;flex-direction:column;gap:6px}
+.rv-field label{font-family:var(--m);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-dim)}
+.rv-field input,.rv-field textarea{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;color:var(--tx);font-family:var(--b);font-size:14px;padding:10px 12px;outline:none}
+.rv-field input:focus{border-color:var(--violet,#9B6FE0)}
+.rv-scoreline{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx-mut)}
+.rv-scoreline b{font-family:var(--m);font-weight:600;color:#fff;font-size:16px}
+.rv-scoreline.final{border-bottom:0;margin-top:2px} .rv-scoreline.final b{font-size:22px;color:var(--amber)}
+.rv-decision{margin-top:12px;display:inline-block;font-family:var(--d);font-weight:700;font-size:14px;padding:7px 16px;border-radius:20px}
+.rv-decision.PASS{background:rgba(63,217,154,.14);color:#7ee7b8} .rv-decision.WARNING{background:rgba(242,169,104,.14);color:#f2b985} .rv-decision.FAIL{background:rgba(229,96,77,.14);color:#f2988c}
+.rv-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.rv-metric{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+.rv-metric .v{font-family:var(--m);font-weight:600;font-size:26px}
+.rv-metric .k{font-size:11px;color:var(--tx-dim);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+.rv-metric .src{font-size:10px;color:var(--tx-dim);margin-top:5px;opacity:.8}
+.rv-block{margin-top:14px} .rv-block h4{font-family:var(--d);font-weight:700;font-size:13px;margin:0 0 6px;color:var(--tx-mut)}
+.rv-list{margin:0;padding-left:18px;font-size:13px;color:var(--tx-mut)} .rv-list li{padding:3px 0}
+.rv-list.good li::marker{color:#3FD99A} .rv-list.warn li::marker{color:#F2A968} .rv-list.bad li::marker{color:#E5604D}
+.rv-list .empty{list-style:none;margin-left:-18px;color:var(--tx-dim);font-style:italic}
+.rv-evidence{display:flex;flex-direction:column;gap:2px}
+.rv-ev{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.rv-ev .lbl{font-family:var(--m);color:var(--tx-mut)} .rv-ev .rz{display:flex;gap:14px;align-items:center}
+.rv-ev .rz b{font-family:var(--m);color:#fff} .rv-ev .ok{color:#3FD99A} .rv-ev .no{color:#E5604D}
+
+/* ============================================================
+   AI Consensus Governance — additive styles (cg- prefix only,
+   does not touch or override any existing selector).
+   ============================================================ */
+.cg-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end}
+.cg-field{flex:1 1 220px;display:flex;flex-direction:column;gap:5px}
+.cg-field label{font-family:var(--m);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-mut)}
+.cg-field input,.cg-field textarea{background:var(--glass);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-family:var(--b);font-size:13.5px;color:var(--tx);outline:none;resize:vertical}
+.cg-field input:focus,.cg-field textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--cobalt-soft)}
+.cg-static{background:var(--glass);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-family:var(--m);font-size:13px;color:var(--tx-mut)}
+.cg-hint{font-size:12.5px;color:var(--tx-mut);margin-left:8px}
+.cg-subhead{font-family:var(--d);font-weight:700;font-size:15.5px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.cg-tag{font-family:var(--m);font-size:10px;color:var(--tx-dim);background:rgba(255,255,255,.06);padding:1px 7px;border-radius:20px}
+.cg-timeline{display:flex;flex-direction:column;gap:2px}
+.cg-timeline .tl-item{display:flex;align-items:center;gap:10px;padding:6px 0;font-family:var(--m);font-size:12.5px;color:var(--tx-mut);border-left:2px solid var(--line);padding-left:14px;position:relative}
+.cg-timeline .tl-item:before{content:"";position:absolute;left:-5px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--amber)}
+.cg-timeline .tl-item b{color:#fff;font-weight:500}
+.cg-timeline .tl-item .dt{margin-left:auto;color:var(--tx-dim)}
+.cg-final{border-left:3px solid var(--teal)}
+.cg-final-text{font-size:16px;line-height:1.6;color:#fff;margin:4px 0 10px}
+.jd-outcome{border-left:4px solid var(--line)}
+.jd-outcome.good{border-left-color:#3FD99A} .jd-outcome.ok{border-left-color:#5FD6C6} .jd-outcome.warn{border-left-color:#F2A968} .jd-outcome.bad{border-left-color:#E5604D}
+.jd-outcome-tag{font-family:var(--m);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx-dim);margin-bottom:6px}
+.jd-outcome-text{font-size:16px;line-height:1.55;color:#fff;margin:0 0 14px;font-weight:500}
+.jd-final{border-top:1px solid var(--line);padding-top:14px}
+.jd-rec{margin-top:8px;font-family:var(--b);font-weight:600;font-size:14.5px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.04)}
+.jd-rec.good{color:#7ee7b8;background:rgba(63,217,154,.09)} .jd-rec.ok{color:#8fe4d8;background:rgba(95,214,198,.09)} .jd-rec.warn{color:#f2b985;background:rgba(242,169,104,.10)} .jd-rec.bad{color:#f2988c;background:rgba(229,96,77,.10)}
+.cg-details{margin-top:8px}
+.cg-details summary{cursor:pointer;font-family:var(--m);font-size:12px;color:var(--amber);letter-spacing:.03em;padding:6px 0}
+.cg-details summary:hover{color:var(--cobalt-3)}
+.cg-evidence{padding:10px 0 0;font-size:13px;color:var(--tx-mut);line-height:1.7}
+.cg-evidence .ev-row{display:flex;justify-content:space-between;border-bottom:1px solid var(--line-2);padding:6px 0}
+.cg-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cg-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:860px){.cg-grid2,.cg-grid3{grid-template-columns:1fr}}
+.cg-model-card{border-top:3px solid var(--line)}
+#cg-card-sonnet{border-top-color:var(--amber)}
+#cg-card-opus{border-top-color:var(--violet)}
+.cg-model-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cg-model-head h3{font-family:var(--d);font-weight:700;font-size:16px;margin:0;color:#fff}
+.cg-model-head h3 small{display:block;font-family:var(--m);font-size:10px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-dim);margin-top:2px}
+.cg-model-head .cg-badge{margin-left:auto}
+.cg-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.cg-dot.sonnet{background:var(--amber);box-shadow:0 0 8px rgba(242,169,104,.6)}
+.cg-dot.opus{background:var(--violet);box-shadow:0 0 8px rgba(155,111,224,.6)}
+.cg-narr{font-size:14px;color:var(--tx);line-height:1.6;margin:0 0 10px}
+.cg-mini-stats{display:flex;flex-wrap:wrap;gap:8px}
+.cg-mini-stats .mstat{background:rgba(255,255,255,.04);border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:12px}
+.cg-mini-stats .mstat b{display:block;font-family:var(--m);color:#fff;font-size:13px}
+.cg-raw{font-family:var(--m);font-size:11.5px;color:var(--tx-mut);white-space:pre-wrap;background:rgba(0,0,0,.2);border-radius:8px;padding:10px;margin-top:8px;max-height:220px;overflow:auto}
+.cg-badge{font-family:var(--m);font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.03em}
+.cg-badge.pass{background:rgba(63,217,154,.16);color:#6ee7b4}
+.cg-badge.partial{background:rgba(242,194,75,.18);color:#f4d06b}
+.cg-badge.fail{background:rgba(242,96,90,.2);color:#f68e89}
+.cg-badge.na{background:rgba(255,255,255,.08);color:var(--tx-dim)}
+.cg-matrix{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.cg-matrix .mcell{background:rgba(255,255,255,.03);border:1px solid var(--line-2);border-radius:10px;padding:12px}
+.cg-matrix .mcell .lbl{font-family:var(--m);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-dim);margin-bottom:6px}
+.cg-matrix .mcell .pctv{font-family:var(--m);font-weight:600;font-size:19px;color:#fff}
+.cg-agree-row{display:flex;align-items:center;font-size:13.5px;color:var(--tx-mut)}
+.cg-agree-row b{font-family:var(--m);color:#fff;font-size:16px}
+.cg-val-card{border-top:3px solid var(--line-2)}
+.cg-val-head{display:flex;align-items:center;justify-content:space-between;font-family:var(--d);font-weight:700;font-size:14.5px;color:#fff;margin-bottom:10px}
+.cg-val-body{font-size:12.5px;color:var(--tx-mut);line-height:1.7}
+.cg-val-body .kv{display:flex;justify-content:space-between;border-bottom:1px solid var(--line-2);padding:5px 0}
+.cg-val-body .kv b{color:var(--tx);font-family:var(--m);font-weight:500}
+.cg-val-body code{display:block;background:rgba(0,0,0,.25);border-radius:6px;padding:8px;margin-top:6px;font-family:var(--m);font-size:11px;color:var(--teal);white-space:pre-wrap;word-break:break-word}
+.cg-bars{display:flex;flex-direction:column;gap:10px}
+.cg-bars .brow{font-size:12.5px}
+.cg-bars .brow .bl{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--tx-mut)}
+.cg-bars .brow .bl b{color:#fff;font-family:var(--m)}
+.cg-bars .btrack{height:8px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
+.cg-bars .btrack .bf{height:100%;border-radius:5px}
+.cg-bars .btrack .bf.sonnet{background:var(--amber)}
+.cg-bars .btrack .bf.opus{background:var(--violet)}
+.cg-transparency p{font-size:13.5px;color:var(--tx);line-height:1.75;margin:0 0 10px}
+.cg-transparency b{color:#fff}
+#cg-err .err{margin-top:10px}
+
+</style>
+</head>
+<body>
+
+<!-- ===================== LANDING ===================== -->
+<div id="landing">
+  <div class="grid-bg"></div>
+  <div class="mega-word" aria-hidden="true">GOVERNANCE</div>
+  <div class="hero-top">
+    <div class="hero-brand"><span class="dotmk"></span> DATA&nbsp;GOVERNANCE</div>
+    <div class="hero-top-note">runs in your browser</div>
+  </div>
+
+  <div class="hero">
+    <div class="orb-stage" id="orb">
+      <div class="orb-glow"></div>
+      <div class="orb-core"></div>
+      <div class="orb-shine"></div>
+      <div class="orb-grid"></div>
+      <div class="orb-ring rr1"><span class="orb-ball"></span></div>
+      <div class="orb-ring rr2"><span class="orb-ball"></span></div>
+      <div class="orb-ring rr3"><span class="orb-ball"></span></div>
+      <div class="orb-spark s1"></div><div class="orb-spark s2"></div><div class="orb-spark s3"></div><div class="orb-spark s4"></div>
+    </div>
+
+    <div class="hero-copy">
+      <div class="eyebrow-l">The Data Governance Framework</div>
+      <h1 class="hero-h1">
+        <span class="w">Govern</span> <span class="w">your</span> <span class="w">data</span><br>
+        <span class="w">before</span> <span class="w">you</span> <span class="w gr">trust</span> <span class="w">it.</span>
+      </h1>
+      <p class="lede">Upload any dataset — CSV or Excel — and it transforms, analyzes, models, and scores the result, so you know exactly how far to trust the numbers.</p>
+      <div class="upload-card" id="dz">
+        <svg class="uic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0L7 9m5-5l5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2" stroke-linecap="round"/></svg>
+        <div class="uc-title">Drop a CSV or Excel file here</div>
+        <div class="uc-sub">or pick one to get started — everything runs in your browser</div>
+        <div class="cta-row">
+          <button class="btn big" id="pick">Choose file</button>
+          <button class="btn ghost big" id="sample">Use sample data</button>
+        </div>
+        <input type="file" id="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm,text/csv" class="hidden" />
+      </div>
+      <div id="landing-err"></div>
+    </div>
+  </div>
+
+  <div class="scroll-cue"><span></span></div>
+</div>
+
+<!-- ===================== PROCESSING OVERLAY ===================== -->
+<div id="overlay" class="hidden">
+  <div class="proc">
+    <h4>Governing dataset</h4>
+    <div class="psub" id="proc-name">Running the Data Governance pipeline…</div>
+    <div class="track"><div class="fill" id="proc-fill"></div></div>
+    <div id="proc-stages"></div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <svg class="mk" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="#F2A968" stroke-width="2"/><circle cx="16" cy="16" r="3.4" fill="#F2A968"/><path d="M16 16 L16 5" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="7.5" cy="21" r="3" fill="#fff"/><circle cx="24.5" cy="21" r="3" fill="#fff"/><path d="M16 16 L7.5 21 M16 16 L24.5 21" stroke="#fff" stroke-width="1.5"/></svg>
+      <div><h1>Data Governance</h1><div class="s">Analysis Console</div></div>
+    </div>
+    <div class="sb-score">
+      <div class="k">Confidence</div>
+      <div class="v" id="sb-score-v">—</div>
+      <span class="band" id="sb-score-band">—</span>
+    </div>
+    <div class="sb-sec">Workspace</div>
+    <ul class="nav" id="nav"></ul>
+    <div class="sb-foot">
+      <button class="btn ghost" id="btn-report">Download report</button>
+      <button class="btn ghost" id="btn-new">New dataset</button>
+    </div>
+  </aside>
+
+  <div class="shell">
+    <div class="statusbar">
+      <button class="burger" id="burger"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round"/></svg></button>
+      <div class="vtitle" id="vtitle">Overview</div>
+      <div class="meta">
+        <div class="st"><span class="k">Dataset</span><span class="v" id="m-name">—</span></div>
+        <div class="st"><span class="k">Rows</span><span class="v" id="m-rows">—</span></div>
+        <div class="st"><span class="k">Fields</span><span class="v" id="m-cols">—</span></div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- OVERVIEW -->
+      <section class="view" id="v-overview">
+        <div class="vhead"><div class="eb">Stage 0 · Summary</div><h2>Dataset overview</h2><p>The governance verdict and headline numbers, computed the moment your data lands.</p></div>
+        <div class="hero">
+          <div class="gcard">
+            <div class="gauge-wrap" id="ov-gauge"></div>
+            <div class="gnum" id="ov-num">—</div>
+            <div class="gband" id="ov-band">—</div>
+            <div class="gcap">Data Governance composite<br>of seven reliability signals</div>
+          </div>
+          <div class="tiles" id="ov-tiles" style="align-content:start"></div>
+        </div>
+        <div class="stack" id="ov-insights"></div>
+      </section>
+
+      <!-- TRANSFORM -->
+      <section class="view" id="v-transform">
+        <div class="vhead"><div class="eb">Stage 1 · Transform</div><h2>Automatic transformation</h2><p>Type inference, cleaning, de-duplication and imputation — applied to any dataset and fully logged.</p></div>
+        <div class="tiles" id="tr-tiles" style="margin-bottom:18px"></div>
+        <div class="grid2">
+          <div class="card pad"><h4 style="font-family:var(--d);font-weight:700;margin:0 0 12px">Operations applied</h4><ul class="log" id="tr-log"></ul></div>
+          <div class="card pad"><h4 style="font-family:var(--d);font-weight:700;margin:0 0 12px">Column schema</h4><div class="tbl-scroll"><table id="tr-table"></table></div></div>
+        </div>
+      </section>
+
+      <!-- INSIGHTS -->
+      <section class="view" id="v-insights">
+        <div class="vhead"><div class="eb">Stage 2 · Analyze</div><h2>Insights &amp; trends</h2><p>Ranked, plain-language findings derived from the cleaned data.</p></div>
+        <div class="stack" id="in-list"></div>
+      </section>
+
+      <!-- VISUALIZE -->
+      <section class="view" id="v-visualize">
+        <div class="vhead"><div class="eb">Stage 3 · Visualize</div><h2>Visualizations</h2><p>Charts auto-selected from the columns your dataset actually contains.</p></div>
+        <div id="viz-grid"></div>
+      </section>
+
+      <!-- ML -->
+      <section class="view" id="v-ml">
+        <div class="vhead"><div class="eb">Stage 4 · Model</div><h2>ML pipeline</h2><p>Clustering, forecasting and anomaly detection — trained in-browser, each reporting a real quality metric.</p></div>
+        <div id="ml-content"></div>
+      </section>
+
+      <!-- CHAT -->
+      <section class="view" id="v-chat">
+        <div class="vhead"><div class="eb">Ask</div><h2>Analytics chat</h2><p>Ask questions in plain English. Answers are computed directly from your data — turn on AI mode to add a conversational LLM on top.</p></div>
+        <div class="ai-controls">
+          <div class="toggle" id="ai-toggle"><span class="sw"></span><span>AI mode</span></div>
+          <span class="ai-badge hidden" id="ai-badge">LLM ON</span>
+          <button class="link-btn" id="ai-settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
+        </div>
+        <div class="chips" id="chat-chips"></div>
+        <div class="chat">
+          <div class="msgs" id="chat-msgs"></div>
+          <div class="chat-in">
+            <input id="chat-input" placeholder="e.g. total revenue by category" autocomplete="off" />
+            <button class="btn" id="chat-send">Ask</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GOVERNANCE -->
+      <section class="view" id="v-gov">
+        <div class="vhead"><div class="eb">Stage 5 · Govern</div><h2>Governance verdict</h2><p>How reliable are the transformed data and the insights above? Here's the full breakdown.</p></div>
+        <div class="gov">
+          <div class="left">
+            <div class="gauge-wrap" id="gov-gauge"></div>
+            <div class="gnum" id="gov-num" style="color:#fff">—</div>
+            <div class="gband" id="gov-band">—</div>
+            <div class="gcap">Composite confidence score<br>on a 0–100 scale</div>
+          </div>
+          <div class="right">
+            <h3>Confidence breakdown</h3>
+            <p class="lead">Each signal's contribution to the score.</p>
+            <div id="gov-parts"></div>
+            <div class="verdict" id="gov-verdict"></div>
+            <div class="method">Score = weighted mean of the seven signals, capped for small samples. Bands: ≥85 Reliable · 70–84 Moderate · 50–69 Guarded · &lt;50 Low.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== CLAUDE OPUS REVIEW DASHBOARD (independent AI review) ===================== -->
+      <section class="view" id="v-review">
+        <div class="vhead"><div class="eb">Independent AI Reviewer</div><h2>Claude Opus Review Dashboard</h2><p>This is not another analysis. Claude Sonnet has already produced the complete analytics above. Claude Opus now independently <b>reviews</b> that work — checking which calculations are correct, whether the SQL and insights hold up, and whether anything is hallucinated — then issues a review report, a score card, and a combined Final Data Governance Score.</p></div>
+
+        <div class="card pad" style="margin-bottom:18px">
+          <div class="rv-row">
+            <div class="rv-field" style="flex:1 1 100%"><label>What Opus will review</label><div class="cg-static" id="rv-scope">Sonnet's dataset summary, statistics, SQL, insights, charts, executive summary &amp; Data Governance result.</div></div>
+          </div>
+          <div class="rv-row">
+            <div class="rv-field"><label>Dataset</label><div class="cg-static" id="rv-dataset">—</div></div>
+            <div class="rv-field"><label>Sonnet Data Governance score</label><div class="cg-static" id="rv-sonnet-score">—</div></div>
+            <div class="rv-field"><label>OpenRouter API key</label><input id="rv-key" type="password" placeholder="sk-or-..." autocomplete="off"/></div>
+            <div class="rv-field"><label>Reviewer — Claude Opus</label><input id="rv-opus-model" value="anthropic/claude-opus-4.8"/></div>
+          </div>
+          <div class="rv-row" style="align-items:center;gap:10px"><button class="btn" id="rv-run">Run Opus review</button><button class="btn ghost" id="rv-test" style="color:var(--tx-mut);border-color:var(--line)">Test connection</button></div>
+          <div id="rv-err"></div>
+        </div>
+
+        <div class="card pad hidden" id="rv-progress" style="margin-bottom:18px"><div class="cg-subhead">Review timeline</div><div id="rv-timeline" class="cg-timeline"></div></div>
+
+        <div id="rv-results" class="hidden">
+          <!-- Final combined score hero -->
+          <div class="gov" style="margin-bottom:18px">
+            <div class="left">
+              <div class="gauge-wrap" id="rv-gauge"></div>
+              <div class="gnum" id="rv-final-num" style="color:#fff">—</div>
+              <div class="gband" id="rv-final-band">—</div>
+              <div class="gcap">Final Data Governance</div>
+            </div>
+            <div class="right">
+              <h3>Final Data Governance Score</h3>
+              <p class="lead">Original Sonnet score blended 50/50 with the Opus trust score, then gated by the review decision.</p>
+              <div class="rv-scoreline"><span>Original Sonnet Score</span><b id="rv-s-sonnet">—</b></div>
+              <div class="rv-scoreline"><span>Opus Review Trust Score</span><b id="rv-s-opus">—</b></div>
+              <div class="rv-scoreline final"><span>Final Data Governance Score</span><b id="rv-s-final">—</b></div>
+              <div class="rv-decision" id="rv-decision">—</div>
+            </div>
+          </div>
+
+          <!-- Review Score Card -->
+          <div class="card pad" style="margin-bottom:18px">
+            <div class="cg-subhead">Review Score Card</div>
+            <div class="rv-cards" id="rv-scorecard"></div>
+          </div>
+
+          <!-- AI Review Report -->
+          <div class="cg-grid2" style="margin-bottom:18px">
+            <div class="card pad">
+              <div class="cg-subhead">Review Summary</div>
+              <p class="cg-narr" id="rv-summary">—</p>
+              <div class="rv-block"><h4>Strengths</h4><ul id="rv-strengths" class="rv-list good"></ul></div>
+              <div class="rv-block"><h4>Weaknesses</h4><ul id="rv-weaknesses" class="rv-list warn"></ul></div>
+            </div>
+            <div class="card pad">
+              <div class="cg-subhead">Validation &amp; Corrections</div>
+              <div class="rv-block"><h4>Validation Comments</h4><ul id="rv-validation" class="rv-list"></ul></div>
+              <div class="rv-block"><h4>Suggested Corrections</h4><ul id="rv-corrections" class="rv-list"></ul></div>
+              <div class="rv-block"><h4>Missing Business Insights</h4><ul id="rv-missing" class="rv-list"></ul></div>
+              <div class="rv-block"><h4>Hallucinations</h4><ul id="rv-hallucinations" class="rv-list bad"></ul></div>
+            </div>
+          </div>
+
+          <!-- Evidence: deterministic verification of Sonnet's numbers -->
+          <div class="card pad">
+            <div class="cg-subhead">Evidence — deterministic re-verification of Sonnet's numbers</div>
+            <div class="rv-evidence" id="rv-evidence"></div>
+          </div>
+        </div>
+      </section>
+
+
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SETTINGS MODAL ===================== -->
+<div id="modal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="mhead"><h3>AI mode settings</h3><p>Add a key to answer with a conversational LLM, grounded in the numbers computed from your data. Your key stays in this browser tab only.</p></div>
+    <div class="mbody">
+      <div class="field"><label>Provider</label><select id="set-provider"><option value="openrouter">OpenRouter</option><option value="openai">OpenAI</option></select></div>
+      <div class="field"><label>API key</label><input id="set-key" type="password" placeholder="sk-..." autocomplete="off" /><div class="hint">Not stored or sent anywhere except directly to the provider.</div></div>
+      <div class="field"><label>Model</label><input id="set-model" placeholder="openai/gpt-4o-mini" /><div class="hint">e.g. <code>openai/gpt-4o-mini</code>, <code>anthropic/claude-sonnet-4.6</code> (OpenRouter) or <code>gpt-4o-mini</code> (OpenAI).</div></div>
+    </div>
+    <div class="mfoot"><button class="btn ghost" id="set-cancel" style="color:var(--tx-mut);border-color:var(--line)">Cancel</button><button class="btn" id="set-save">Save &amp; enable</button></div>
+  </div>
+</div>
+<!-- ===================== REPORT MODAL ===================== -->
+<div id="report-modal" class="modal-bg hidden">
+  <div class="modal" style="width:min(600px,94vw)">
+    <div class="mhead"><h3>Governance report</h3><p>Download the JSON, or copy it if your viewer blocks downloads.</p></div>
+    <div class="mbody">
+      <textarea id="report-text" readonly style="width:100%;height:260px;border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-family:var(--m);font-size:12px;line-height:1.5;resize:vertical;outline:none;background:#FBFCFB"></textarea>
+      <div class="hint" id="report-hint" style="font-size:12px;color:var(--tx-mut);margin-top:8px"></div>
+    </div>
+    <div class="mfoot" style="flex-wrap:wrap">
+      <button class="btn ghost" id="report-close" style="color:var(--tx-mut);border-color:var(--line)">Close</button>
+      <button class="btn ghost" id="report-copy">Copy JSON</button>
+      <a class="btn ghost" id="report-word" style="text-decoration:none">Download .doc</a>
+      <a class="btn ghost" id="report-download" download style="text-decoration:none">Download .json</a>
+      <button class="btn" id="report-pdf">Save as PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- printable report (populated on export; only visible when printing) -->
+<div id="print-report"></div>
+
+<script>
+/* ============================================================================
+   Data Governance — analytics + governance engine (pure, framework-free).
+   All functions are pure and operate on plain arrays/objects so they can be
+   unit-tested in Node and reused unchanged in the browser.
+   ========================================================================== */
+
+/* ---------- small helpers ------------------------------------------------- */
+const isBlank = (v) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+const cleanNumStr = (s) => String(s).replace(/[,$€£₹%\s]/g, '');
+
+function parseNumber(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  if (isBlank(v)) return null;
+  const s = cleanNumStr(v);
+  if (s === '' || s === '-' || s === '.') return null;
+  if (!/^-?\d*\.?\d+(?:e-?\d+)?$/i.test(s)) return null;
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+}
+
+const MONTHS = /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
+function looksDateLike(v) {
+  if (typeof v !== 'string') return false;
+  const s = v.trim();
+  if (s.length < 4) return false;
+  // require a date separator or a month name to avoid treating plain ints as dates
+  return (/[-/:]/.test(s) && /\d/.test(s)) || MONTHS.test(s);
+}
+function parseDate(v) {
+  if (isBlank(v)) return null;
+  if (!looksDateLike(v)) return null;
+  const t = Date.parse(v);
+  return isNaN(t) ? null : t;
+}
+
+const BOOLS = { true: true, false: false, yes: true, no: false, y: true, n: false, t: true, f: false };
+function parseBool(v) {
+  if (typeof v === 'boolean') return v;
+  if (isBlank(v)) return null;
+  const s = String(v).trim().toLowerCase();
+  return s in BOOLS ? BOOLS[s] : null;
+}
+
+/* ---------- statistics ---------------------------------------------------- */
+function stats(nums) {
+  const a = nums.filter((x) => x !== null && isFinite(x)).sort((x, y) => x - y);
+  const n = a.length;
+  if (!n) return null;
+  const sum = a.reduce((s, x) => s + x, 0);
+  const mean = sum / n;
+  const q = (p) => {
+    const idx = (n - 1) * p, lo = Math.floor(idx), hi = Math.ceil(idx);
+    return a[lo] + (a[hi] - a[lo]) * (idx - lo);
+  };
+  const variance = a.reduce((s, x) => s + (x - mean) ** 2, 0) / n;
+  return {
+    n, min: a[0], max: a[n - 1], mean, median: q(0.5),
+    q1: q(0.25), q3: q(0.75), std: Math.sqrt(variance), sum,
+  };
+}
+
+function pearson(xs, ys) {
+  const pairs = [];
+  for (let i = 0; i < xs.length; i++) {
+    if (xs[i] !== null && ys[i] !== null && isFinite(xs[i]) && isFinite(ys[i])) pairs.push([xs[i], ys[i]]);
+  }
+  const n = pairs.length;
+  if (n < 3) return null;
+  let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+  for (const [x, y] of pairs) { sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; }
+  const cov = sxy - (sx * sy) / n;
+  const vx = sxx - (sx * sx) / n, vy = syy - (sy * sy) / n;
+  if (vx <= 0 || vy <= 0) return null;
+  return cov / Math.sqrt(vx * vy);
+}
+
+/* ---------- type inference ------------------------------------------------ */
+/* Returns per-column: type, and a validity ratio (share of non-blank cells
+   that conform to the inferred type). */
+function inferColumn(name, values) {
+  const nonBlank = values.filter((v) => !isBlank(v));
+  const total = values.length;
+  const missing = total - nonBlank.length;
+  const uniq = new Set(nonBlank.map((v) => String(v).trim())).size;
+
+  if (nonBlank.length === 0) {
+    return { name, type: 'empty', missing, missingPct: 100, unique: 0, validity: 0, constant: true };
+  }
+
+  const numOk = nonBlank.filter((v) => parseNumber(v) !== null).length;
+  const dateOk = nonBlank.filter((v) => parseDate(v) !== null).length;
+  const boolOk = nonBlank.filter((v) => parseBool(v) !== null).length;
+
+  const rNum = numOk / nonBlank.length;
+  const rDate = dateOk / nonBlank.length;
+  const rBool = boolOk / nonBlank.length;
+
+  let type, validity;
+  if (rBool >= 0.99 && uniq <= 3) { type = 'boolean'; validity = rBool; }
+  else if (rNum >= 0.8) { type = 'numeric'; validity = rNum; }
+  else if (rDate >= 0.7) { type = 'datetime'; validity = rDate; }
+  else {
+    // categorical vs free text by cardinality ratio
+    const ratio = uniq / nonBlank.length;
+    type = (ratio > 0.6 && uniq > 40) ? 'text' : 'categorical';
+    validity = 1; // strings always "valid" as strings
+  }
+
+  return {
+    name, type,
+    missing, missingPct: +(100 * missing / total).toFixed(2),
+    unique: uniq, cardinality: +(uniq / total).toFixed(3),
+    validity: +validity.toFixed(3),
+    constant: uniq <= 1,
+  };
+}
+
+/* ---------- transformation pipeline --------------------------------------- */
+/* Produces a cleaned column-oriented dataset + a log of operations. */
+function transform(rawRows, headers) {
+  const log = [];
+  const nRawRows = rawRows.length;
+
+  // 1. trim string cells
+  let trimmed = 0;
+  const rows = rawRows.map((r) => {
+    const o = {};
+    for (const h of headers) {
+      let v = r[h];
+      if (typeof v === 'string') { const t = v.trim(); if (t !== v) trimmed++; v = t; }
+      o[h] = v;
+    }
+    return o;
+  });
+  if (trimmed) log.push({ op: 'Trimmed whitespace', detail: `${trimmed} text cells cleaned` });
+
+  // 2. drop fully-duplicate rows
+  const seen = new Set();
+  const deduped = [];
+  for (const r of rows) {
+    const key = headers.map((h) => r[h]).join('\u0001');
+    if (seen.has(key)) continue;
+    seen.add(key); deduped.push(r);
+  }
+  const dupCount = rows.length - deduped.length;
+  if (dupCount) log.push({ op: 'Removed duplicate rows', detail: `${dupCount} exact duplicates dropped` });
+
+  // 3. infer types
+  const columns = headers.map((h) => inferColumn(h, deduped.map((r) => r[h])));
+
+  // 4. build typed/cleaned columns + impute for analysis
+  const data = {}; // name -> typed array (nulls for missing)
+  const imputed = {};
+  for (const col of columns) {
+    const raw = deduped.map((r) => r[col.name]);
+    let arr;
+    if (col.type === 'numeric') {
+      arr = raw.map(parseNumber);
+      if (col.type === 'numeric' && (cleanNumStr(raw.find((v) => !isBlank(v)) ?? '') !== String(raw.find((v) => !isBlank(v)) ?? '')))
+        log.push({ op: 'Coerced to number', detail: `“${col.name}” — stripped symbols/separators` });
+    } else if (col.type === 'datetime') {
+      arr = raw.map(parseDate);
+      log.push({ op: 'Parsed dates', detail: `“${col.name}” → timestamps` });
+    } else if (col.type === 'boolean') {
+      arr = raw.map(parseBool);
+    } else {
+      arr = raw.map((v) => (isBlank(v) ? null : String(v)));
+    }
+    data[col.name] = arr;
+
+    // imputation for analysis copies (original nulls preserved in `data`)
+    if (col.missing > 0 && col.type !== 'text' && col.type !== 'empty') {
+      if (col.type === 'numeric') {
+        const s = stats(arr); const fill = s ? s.median : 0;
+        imputed[col.name] = arr.map((v) => (v === null ? fill : v));
+        log.push({ op: 'Imputed missing (median)', detail: `“${col.name}” — ${col.missing} cells → ${(+fill.toFixed(2))}` });
+      } else if (col.type === 'categorical' || col.type === 'boolean') {
+        const counts = {}; arr.forEach((v) => { if (v !== null) counts[v] = (counts[v] || 0) + 1; });
+        const mode = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        const fill = mode ? mode[0] : 'Unknown';
+        imputed[col.name] = arr.map((v) => (v === null ? fill : v));
+        log.push({ op: 'Imputed missing (mode)', detail: `“${col.name}” — ${col.missing} cells → “${fill}”` });
+      } else imputed[col.name] = arr;
+    } else imputed[col.name] = arr;
+  }
+
+  // 5. flag constant / low-information columns
+  for (const col of columns) {
+    if (col.constant) log.push({ op: 'Flagged constant column', detail: `“${col.name}” carries no variation` });
+  }
+
+  // 6. outlier detection (IQR) on numeric columns — flagged, not removed
+  const outliers = {};
+  for (const col of columns) {
+    if (col.type !== 'numeric') continue;
+    const s = stats(data[col.name]);
+    if (!s) continue;
+    const iqr = s.q3 - s.q1, lo = s.q1 - 1.5 * iqr, hi = s.q3 + 1.5 * iqr;
+    const cnt = data[col.name].filter((v) => v !== null && (v < lo || v > hi)).length;
+    outliers[col.name] = cnt;
+    if (cnt) log.push({ op: 'Flagged outliers', detail: `“${col.name}” — ${cnt} values outside 1.5×IQR` });
+  }
+
+  return { columns, data, imputed, outliers, log, nRawRows, nRows: deduped.length, dupCount, headers };
+}
+
+/* ---------- target detection + feature association (for analytical Q&A) ---- */
+const TARGET_HINT = /(status|class|target|label|outcome|diagnos|disease|\bstage\b|severity|\bgroup\b|result|condition|ckd|parkinson|churn|surviv|default|fraud|positive|category|type)/i;
+function detectTarget(columns) {
+  const cand = columns.filter((c) => c.type !== 'datetime' && c.type !== 'text' && c.type !== 'empty' && c.unique >= 2 && c.unique <= 12 && !c.constant);
+  if (!cand.length) return null;
+  const score = (c) => (TARGET_HINT.test(c.name) ? 100 : 0) + (c.type === 'boolean' ? 30 : 0) + (c.type === 'categorical' ? 18 : 0) + (c.unique === 2 ? 15 : c.unique <= 6 ? 8 : 0);
+  const ranked = [...cand].sort((a, b) => score(b) - score(a));
+  const best = ranked[0];
+  return (TARGET_HINT.test(best.name) || best.type === 'boolean' || best.type === 'categorical' || best.unique <= 6) ? best : null;
+}
+function numFromLabel(s){ const m=String(s).match(/-?\d+(\.\d+)?/); return m?parseFloat(m[0]):null; }
+function encodeTarget(t, target) {
+  const vals = t.imputed[target.name];
+  if (target.type === 'numeric') return { codes: vals.map((v)=>v), ordinal: true, classes: null };
+  const uniq = [...new Set(vals.filter((v) => v != null))];
+  const allNum = uniq.every((u) => numFromLabel(u) !== null);
+  uniq.sort(allNum ? (a, b) => numFromLabel(a) - numFromLabel(b) : undefined);
+  const map = new Map(uniq.map((u, i) => [u, i]));
+  return { codes: vals.map((v) => (v == null ? null : map.get(v))), ordinal: uniq.length > 2, classes: uniq, map };
+}
+function featureAssociations(t, target) {
+  const enc = encodeTarget(t, target);
+  const items = [];
+  for (const c of t.columns) {
+    if (c.name === target.name) continue;
+    if (c.type !== 'numeric') continue;
+    const r = pearson(t.data[c.name], enc.codes);
+    if (r !== null) items.push({ feature: c.name, r: +r.toFixed(3), abs: Math.abs(r), dir: r >= 0 ? 'increases' : 'decreases' });
+  }
+  items.sort((a, b) => b.abs - a.abs);
+  return { target: target.name, classes: enc.classes, ordinal: enc.ordinal, items };
+}
+function groupStats(t, measureName, groupName) {
+  const acc = {};
+  for (let i = 0; i < t.nRows; i++) {
+    const g = t.imputed[groupName][i], v = t.imputed[measureName][i];
+    if (g == null || v == null || !isFinite(v)) continue;
+    (acc[g] = acc[g] || []).push(v);
+  }
+  const rows = Object.entries(acc).map(([k, arr]) => ({ group: k, mean: arr.reduce((s, x) => s + x, 0) / arr.length, n: arr.length }));
+  const allNum = rows.every((r) => numFromLabel(r.group) !== null);
+  if (allNum) rows.sort((a, b) => numFromLabel(a.group) - numFromLabel(b.group));
+  else rows.sort((a, b) => b.mean - a.mean);
+  return rows;
+}
+function compareGroups(t, target) {
+  let classes, codes;
+  const enc = encodeTarget(t, target);
+  if (enc.classes && enc.classes.length === 2) { classes = enc.classes; codes = enc.codes; }
+  else {
+    const vals = t.imputed[target.name];
+    const uniq = [...new Set(vals.filter((v) => v != null))];
+    if (uniq.length !== 2) return null;
+    uniq.sort((a, b) => (numFromLabel(a) ?? 0) - (numFromLabel(b) ?? 0));
+    const map = new Map(uniq.map((u, i) => [u, i])); classes = uniq; codes = vals.map((v) => (v == null ? null : map.get(v)));
+  }
+  const [c0, c1] = classes;
+  const out = [];
+  for (const c of t.columns) {
+    if (c.name === target.name || c.type !== 'numeric') continue;
+    const a = [], b = [];
+    for (let i = 0; i < t.nRows; i++) { const g = codes[i], v = t.data[c.name][i]; if (v == null || g == null) continue; (g === 0 ? a : b).push(v); }
+    if (a.length < 3 || b.length < 3) continue;
+    const m = (arr) => arr.reduce((s, x) => s + x, 0) / arr.length;
+    const sd = (arr, mu) => Math.sqrt(arr.reduce((s, x) => s + (x - mu) ** 2, 0) / arr.length) || 1e-9;
+    const ma = m(a), mb = m(b), pooled = Math.sqrt((sd(a, ma) ** 2 + sd(b, mb) ** 2) / 2);
+    const d = (mb - ma) / pooled;
+    out.push({ feature: c.name, g0: +ma.toFixed(2), g1: +mb.toFixed(2), d: +d.toFixed(2), abs: Math.abs(d) });
+  }
+  out.sort((x, y) => y.abs - x.abs);
+  return { c0, c1, items: out };
+}
+
+/* ---------- analysis: insights + trends ----------------------------------- */
+const MEASURE_HINT = /revenue|sales|amount|total|value|price|profit|cost|spend|income|gmv|turnover/i;
+function pickMeasure(numeric, data) {
+  if (!numeric.length) return null;
+  const hinted = numeric.filter((c) => MEASURE_HINT.test(c.name));
+  const pool = hinted.length ? hinted : numeric;
+  // among the pool, prefer the one with the largest spread (most to explain)
+  let best = pool[0], bestSpread = -1;
+  for (const c of pool) {
+    const s = stats(data[c.name]); if (!s) continue;
+    const spread = s.mean ? s.std / Math.abs(s.mean) : s.std;
+    if (spread > bestSpread) { bestSpread = spread; best = c; }
+  }
+  return best;
+}
+function pickDimension(categorical) {
+  // lowest-cardinality categorical that still varies (best for grouping)
+  const usable = categorical.filter((c) => c.unique > 1 && c.unique <= 50);
+  if (!usable.length) return categorical[0] || null;
+  return usable.sort((a, b) => a.unique - b.unique)[0];
+}
+
+function analyze(t) {
+  const { columns, data, imputed, outliers, nRows } = t;
+  const numeric = columns.filter((c) => c.type === 'numeric');
+  const categorical = columns.filter((c) => c.type === 'categorical');
+  const datetime = columns.filter((c) => c.type === 'datetime');
+  const measure = pickMeasure(numeric, data);
+  const dimension = pickDimension(categorical);
+
+  // correlations
+  const corr = [];
+  for (let i = 0; i < numeric.length; i++)
+    for (let j = i + 1; j < numeric.length; j++) {
+      const r = pearson(data[numeric[i].name], data[numeric[j].name]);
+      if (r !== null) corr.push({ a: numeric[i].name, b: numeric[j].name, r: +r.toFixed(3) });
+    }
+  corr.sort((x, y) => Math.abs(y.r) - Math.abs(x.r));
+
+  // trend (first datetime × first numeric)
+  let trend = null;
+  if (datetime.length && numeric.length) {
+    const dcol = datetime[0].name, mcol = (measure || numeric[0]).name;
+    const pts = [];
+    for (let i = 0; i < nRows; i++) {
+      const d = data[dcol][i], m = imputed[mcol][i];
+      if (d !== null && m !== null) pts.push([d, m]);
+    }
+    pts.sort((a, b) => a[0] - b[0]);
+    if (pts.length > 2) {
+      // aggregate by month
+      const buckets = {};
+      for (const [d, m] of pts) {
+        const dt = new Date(d); const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+        buckets[key] = (buckets[key] || 0) + m;
+      }
+      const keys = Object.keys(buckets).sort();
+      const series = keys.map((k) => buckets[k]);
+      // linear slope over index
+      const first = series[0], last = series[series.length - 1];
+      const pct = first ? ((last - first) / Math.abs(first)) * 100 : 0;
+      trend = { measure: mcol, date: dcol, keys, series,
+        direction: pct > 5 ? 'up' : pct < -5 ? 'down' : 'flat',
+        pctChange: +pct.toFixed(1) };
+    }
+  }
+
+  // category breakdown (first categorical × first numeric, by sum)
+  let breakdown = null;
+  if (categorical.length && numeric.length) {
+    const ccol = (dimension || categorical[0]).name, mcol = (measure || numeric[0]).name;
+    const agg = {};
+    for (let i = 0; i < nRows; i++) {
+      const c = imputed[ccol][i], m = imputed[mcol][i];
+      if (c !== null && m !== null) agg[c] = (agg[c] || 0) + m;
+    }
+    const rows = Object.entries(agg).map(([k, v]) => ({ key: k, value: v })).sort((a, b) => b.value - a.value);
+    const total = rows.reduce((s, r) => s + r.value, 0);
+    breakdown = { category: ccol, measure: mcol, rows: rows.slice(0, 12), total };
+  }
+
+  /* insights (ranked natural-language highlights) */
+  const insights = [];
+  if (t.dupCount) insights.push({ w: 3, kind: 'quality', text: `Removed ${t.dupCount} duplicate row${t.dupCount > 1 ? 's' : ''} during cleaning.` });
+  const worstMissing = [...columns].filter((c) => c.missingPct > 0).sort((a, b) => b.missingPct - a.missingPct)[0];
+  if (worstMissing) insights.push({ w: worstMissing.missingPct > 20 ? 5 : 2, kind: 'quality', text: `“${worstMissing.name}” has the most missing data at ${worstMissing.missingPct}%${worstMissing.missingPct > 20 ? ' — treat its analysis with caution.' : '.'}` });
+  if (breakdown && breakdown.rows.length) {
+    const top = breakdown.rows[0]; const share = (100 * top.value / breakdown.total).toFixed(1);
+    insights.push({ w: 4, kind: 'trend', text: `“${top.key}” leads ${breakdown.category} by ${breakdown.measure}, at ${share}% of the total.` });
+  }
+  if (trend) insights.push({ w: 4, kind: 'trend', text: trend.direction === 'flat'
+    ? `${trend.measure} stays broadly flat over the period.`
+    : `${trend.measure} trends ${trend.direction} ${Math.abs(trend.pctChange)}% from first to last month.` });
+  if (corr.length) {
+    const c = corr[0]; const strength = Math.abs(c.r) > 0.6 ? 'strong' : Math.abs(c.r) > 0.3 ? 'moderate' : 'weak';
+    insights.push({ w: Math.abs(c.r) > 0.6 ? 4 : 2, kind: 'stat', text: `${c.a} and ${c.b} show a ${strength} ${c.r < 0 ? 'negative' : 'positive'} correlation (r=${c.r}).` });
+  }
+  const constCols = columns.filter((c) => c.constant);
+  if (constCols.length) insights.push({ w: 2, kind: 'quality', text: `${constCols.length} column${constCols.length > 1 ? 's carry' : ' carries'} no variation and add little signal.` });
+  const bigOutlier = Object.entries(outliers).sort((a, b) => b[1] - a[1])[0];
+  if (bigOutlier && bigOutlier[1] > 0) insights.push({ w: 2, kind: 'stat', text: `“${bigOutlier[0]}” contains ${bigOutlier[1]} statistical outlier${bigOutlier[1] > 1 ? 's' : ''}.` });
+  insights.push({ w: 1, kind: 'stat', text: `Dataset spans ${nRows} rows across ${columns.length} fields (${numeric.length} numeric, ${categorical.length} categorical, ${datetime.length} date).` });
+  insights.sort((a, b) => b.w - a.w);
+
+  const target = detectTarget(columns);
+  const assoc = target ? featureAssociations(t, target) : null;
+  return { numeric, categorical, datetime, measure, dimension, corr, trend, breakdown, insights, target, assoc };
+}
+
+/* ---------- Data Governance confidence score ----------------------------- */
+/* Composite of transparent sub-scores, each 0..100. */
+function govern(t, a) {
+  const { columns, data, outliers, nRows, nRawRows } = t;
+  const cells = columns.length * nRows || 1;
+
+  const totalMissing = columns.reduce((s, c) => s + c.missing, 0);
+  const completeness = 100 * (1 - totalMissing / cells);
+
+  const uniqueness = 100 * (1 - (t.dupCount / (nRawRows || 1)));
+
+  const validity = 100 * (columns.reduce((s, c) => s + (c.validity ?? 1), 0) / (columns.length || 1));
+
+  const typed = columns.filter((c) => c.type !== 'text' && c.type !== 'empty').length;
+  const typeConfidence = 100 * (typed / (columns.length || 1));
+
+  let numOutlier = 0, numCells = 0;
+  for (const c of columns) if (c.type === 'numeric') { numOutlier += outliers[c.name] || 0; numCells += nRows; }
+  const stability = numCells ? 100 * (1 - numOutlier / numCells) : 90;
+
+  // analytical robustness grows with sample size (log-scaled, saturates ~5k rows)
+  const robustness = Math.max(20, Math.min(100, 100 * (Math.log10(Math.max(nRows, 1)) / Math.log10(5000))));
+
+  const richness = 100 * ((a.numeric.length > 0 ? 0.4 : 0) + (a.categorical.length > 0 ? 0.3 : 0) + (a.datetime.length > 0 ? 0.3 : 0));
+
+  const parts = [
+    { key: 'Completeness', value: completeness, weight: 0.22, hint: 'Share of cells present after cleaning' },
+    { key: 'Validity', value: validity, weight: 0.20, hint: 'Values conforming to their inferred type' },
+    { key: 'Uniqueness', value: uniqueness, weight: 0.12, hint: 'Freedom from duplicate records' },
+    { key: 'Type clarity', value: typeConfidence, weight: 0.12, hint: 'Columns resolved to a concrete type' },
+    { key: 'Stability', value: stability, weight: 0.12, hint: 'Numeric values within expected range' },
+    { key: 'Robustness', value: robustness, weight: 0.12, hint: 'Sample size supporting the analysis' },
+    { key: 'Richness', value: richness, weight: 0.10, hint: 'Variety of analyzable field types' },
+  ].map((p) => ({ ...p, value: Math.max(0, Math.min(100, +p.value.toFixed(1))) }));
+
+  let score = +parts.reduce((s, p) => s + p.value * p.weight, 0).toFixed(1);
+  // Governance guard: small samples cannot certify as fully reliable.
+  const cap = nRows >= 500 ? 100 : nRows >= 100 ? 88 : nRows >= 30 ? 78 : nRows >= 10 ? 62 : 50;
+  let capped = false;
+  if (score > cap) { score = cap; capped = true; }
+  const band = score >= 85 ? { label: 'Reliable', tone: 'good' }
+    : score >= 70 ? { label: 'Moderate', tone: 'ok' }
+    : score >= 50 ? { label: 'Guarded', tone: 'warn' }
+    : { label: 'Low', tone: 'bad' };
+
+  const verdict = band.tone === 'good'
+    ? 'The transformed data and insights are well-supported and safe to act on.'
+    : band.tone === 'ok'
+    ? 'Insights are usable, but review the flagged quality gaps before high-stakes decisions.'
+    : band.tone === 'warn'
+    ? 'Treat insights as directional — data quality or sample size limits reliability.'
+    : 'Insights are weakly supported; clean or expand the dataset before relying on them.';
+
+  const verdictFull = capped ? verdict + ` Score is capped by the small sample (${nRows} rows).` : verdict;
+  return { score, band, verdict: verdictFull, parts, capped, cap };
+}
+
+/* full pipeline */
+function runPipeline(rawRows, headers) {
+  const t = transform(rawRows, headers);
+  const a = analyze(t);
+  const g = govern(t, a);
+  return { t, a, g };
+}
+
+
+/* ============================================================================
+   Data Governance — client-side ML engine (pure JS, node-testable).
+   Real algorithms, no libraries: standardization, k-means (++init),
+   silhouette, PCA-to-2D (power iteration), least-squares forecast, z-score /
+   IQR anomaly detection. Everything runs in the browser.
+   ========================================================================== */
+
+/* ---------- matrix helpers ------------------------------------------------ */
+function buildMatrix(data, cols, nRows) {
+  // rows with all features present; returns { X, idx } (idx maps back to row)
+  const X = [], idx = [];
+  for (let i = 0; i < nRows; i++) {
+    const row = [];
+    let ok = true;
+    for (const c of cols) { const v = data[c][i]; if (v === null || !isFinite(v)) { ok = false; break; } row.push(v); }
+    if (ok) { X.push(row); idx.push(i); }
+  }
+  return { X, idx };
+}
+function standardize(X) {
+  const n = X.length, d = X[0].length;
+  const mean = Array(d).fill(0), std = Array(d).fill(0);
+  for (const r of X) for (let j = 0; j < d; j++) mean[j] += r[j] / n;
+  for (const r of X) for (let j = 0; j < d; j++) std[j] += (r[j] - mean[j]) ** 2 / n;
+  for (let j = 0; j < d; j++) std[j] = Math.sqrt(std[j]) || 1;
+  const Z = X.map((r) => r.map((v, j) => (v - mean[j]) / std[j]));
+  return { Z, mean, std };
+}
+const dist2 = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2; return s; };
+
+/* ---------- k-means (with k-means++ seeding) ------------------------------ */
+function kmeans(Z, k, maxIter = 60) {
+  const n = Z.length, d = Z[0].length;
+  if (n < k) k = Math.max(1, n);
+  // k-means++ init
+  const centroids = [Z[Math.floor(Math.random() * n)].slice()];
+  while (centroids.length < k) {
+    const dmin = Z.map((p) => Math.min(...centroids.map((c) => dist2(p, c))));
+    const sum = dmin.reduce((a, b) => a + b, 0) || 1;
+    let r = Math.random() * sum, pick = 0;
+    for (let i = 0; i < n; i++) { r -= dmin[i]; if (r <= 0) { pick = i; break; } }
+    centroids.push(Z[pick].slice());
+  }
+  let labels = new Array(n).fill(0);
+  for (let it = 0; it < maxIter; it++) {
+    let moved = false;
+    // assign
+    for (let i = 0; i < n; i++) {
+      let best = 0, bd = Infinity;
+      for (let c = 0; c < k; c++) { const dd = dist2(Z[i], centroids[c]); if (dd < bd) { bd = dd; best = c; } }
+      if (labels[i] !== best) { labels[i] = best; moved = true; }
+    }
+    // update
+    const sums = Array.from({ length: k }, () => Array(d).fill(0)), cnt = Array(k).fill(0);
+    for (let i = 0; i < n; i++) { cnt[labels[i]]++; const r = Z[i]; const s = sums[labels[i]]; for (let j = 0; j < d; j++) s[j] += r[j]; }
+    for (let c = 0; c < k; c++) if (cnt[c]) for (let j = 0; j < d; j++) centroids[c][j] = sums[c][j] / cnt[c];
+    if (!moved && it > 0) break;
+  }
+  // inertia
+  let inertia = 0; for (let i = 0; i < n; i++) inertia += dist2(Z[i], centroids[labels[i]]);
+  return { labels, centroids, k, inertia };
+}
+
+/* silhouette (sampled for speed on large n) */
+function silhouette(Z, labels, k) {
+  const n = Z.length; if (k < 2) return 0;
+  const sampleIdx = n > 600 ? Array.from({ length: 600 }, () => Math.floor(Math.random() * n)) : Z.map((_, i) => i);
+  const byCluster = Array.from({ length: k }, () => []);
+  Z.forEach((p, i) => byCluster[labels[i]].push(i));
+  let total = 0, cnt = 0;
+  for (const i of sampleIdx) {
+    const ci = labels[i];
+    if (byCluster[ci].length <= 1) continue;
+    const meanTo = (members) => { let s = 0, m = 0; for (const j of members) { if (j === i) continue; s += Math.sqrt(dist2(Z[i], Z[j])); m++; } return m ? s / m : 0; };
+    const a = meanTo(byCluster[ci]);
+    let b = Infinity;
+    for (let c = 0; c < k; c++) { if (c === ci || !byCluster[c].length) continue; b = Math.min(b, meanTo(byCluster[c])); }
+    if (!isFinite(b)) continue;
+    total += (b - a) / Math.max(a, b); cnt++;
+  }
+  return cnt ? +(total / cnt).toFixed(3) : 0;
+}
+
+/* choose best k by silhouette across 2..maxK */
+function autoCluster(data, numericCols, nRows, maxK = 5) {
+  const cols = numericCols.slice(0, 6).map((c) => c.name);
+  if (cols.length < 2) return null;
+  const { X, idx } = buildMatrix(data, cols, nRows);
+  if (X.length < 10) return null;
+  const { Z } = standardize(X);
+  let best = null;
+  for (let k = 2; k <= Math.min(maxK, Math.floor(X.length / 3)); k++) {
+    const km = kmeans(Z, k);
+    const sil = silhouette(Z, km.labels, k);
+    if (!best || sil > best.sil) best = { ...km, sil };
+  }
+  if (!best) return null;
+  const proj = pca2(Z);
+  // cluster sizes
+  const sizes = Array(best.k).fill(0); best.labels.forEach((l) => sizes[l]++);
+  return { cols, idx, labels: best.labels, k: best.k, silhouette: best.sil, sizes,
+    points: proj.map((p, i) => ({ x: p[0], y: p[1], c: best.labels[i] })),
+    axes: proj.axes };
+}
+
+/* ---------- PCA to 2D via power iteration --------------------------------- */
+function pca2(Z) {
+  const n = Z.length, d = Z[0].length;
+  // covariance d×d
+  const C = Array.from({ length: d }, () => Array(d).fill(0));
+  for (const r of Z) for (let a = 0; a < d; a++) for (let b = 0; b < d; b++) C[a][b] += r[a] * r[b] / n;
+  const matVec = (M, v) => M.map((row) => row.reduce((s, x, j) => s + x * v[j], 0));
+  const norm = (v) => { const m = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map((x) => x / m); };
+  const powIter = (M) => { let v = norm(Array.from({ length: d }, () => Math.random())); for (let i = 0; i < 50; i++) v = norm(matVec(M, v)); return v; };
+  const v1 = powIter(C);
+  // deflate
+  const lam = matVec(C, v1).reduce((s, x, i) => s + x * v1[i], 0);
+  const C2 = C.map((row, a) => row.map((x, b) => x - lam * v1[a] * v1[b]));
+  const v2 = d > 1 ? powIter(C2) : v1.map(() => 0);
+  const proj = Z.map((r) => [r.reduce((s, x, j) => s + x * v1[j], 0), r.reduce((s, x, j) => s + x * v2[j], 0)]);
+  proj.axes = { v1, v2 };
+  return proj;
+}
+
+/* ---------- forecast: least-squares trend + horizon ----------------------- */
+function forecast(trend, horizon = 3) {
+  if (!trend || !trend.series || trend.series.length < 4) return null;
+  const y = trend.series, n = y.length;
+  const x = y.map((_, i) => i);
+  const mx = x.reduce((a, b) => a + b, 0) / n, my = y.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0; for (let i = 0; i < n; i++) { sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; }
+  const b = sxx ? sxy / sxx : 0, a = my - b * mx;
+  const fit = x.map((xi) => a + b * xi);
+  // in-sample fit quality
+  let ssRes = 0, ssTot = 0, mape = 0, mc = 0;
+  for (let i = 0; i < n; i++) { ssRes += (y[i] - fit[i]) ** 2; ssTot += (y[i] - my) ** 2; if (y[i]) { mape += Math.abs((y[i] - fit[i]) / y[i]); mc++; } }
+  const r2 = ssTot ? Math.max(0, 1 - ssRes / ssTot) : 0;
+  mape = mc ? mape / mc : 1;
+  // future labels: extend month keys
+  const future = [];
+  const last = trend.keys[trend.keys.length - 1];
+  let [yy, mm] = last.split('-').map(Number);
+  for (let h = 1; h <= horizon; h++) { mm++; if (mm > 12) { mm = 1; yy++; } future.push(`${yy}-${String(mm).padStart(2, '0')}`); }
+  const proj = future.map((_, h) => a + b * (n - 1 + h + 1));
+  return { keys: trend.keys, actual: y, fit, futureKeys: future, forecast: proj,
+    slope: b, r2: +r2.toFixed(3), mape: +mape.toFixed(3), measure: trend.measure };
+}
+
+/* ---------- anomaly detection (robust z-score / IQR) ---------------------- */
+function detectAnomalies(data, col, nRows) {
+  const vals = [], idx = [];
+  for (let i = 0; i < nRows; i++) { const v = data[col][i]; if (v !== null && isFinite(v)) { vals.push(v); idx.push(i); } }
+  if (vals.length < 12) return null;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const absDev = vals.map((v) => Math.abs(v - median)).sort((a, b) => a - b);
+  const mad = absDev[Math.floor(absDev.length / 2)] || 1e-9;
+  // Iglewicz–Hoaglin modified z-score; |M|>3.5 = anomaly
+  const mz = (v) => 0.6745 * (v - median) / mad;
+  const points = vals.map((v, i) => ({ i: idx[i], v, z: +mz(v).toFixed(2), anomaly: Math.abs(mz(v)) > 3.5 }));
+  const count = points.filter((p) => p.anomaly).length;
+  return { col, points, count, share: +(100 * count / vals.length).toFixed(2), median: +median.toFixed(2), mad: +mad.toFixed(2) };
+}
+
+/* ---------- ML pipeline orchestration ------------------------------------- */
+function runML(t, a) {
+  const cluster = autoCluster(t.data, a.numeric, t.nRows);
+  const fc = forecast(a.trend, 3);
+  const anomCol = (a.measure || a.numeric[0]);
+  const anomalies = anomCol ? detectAnomalies(t.data, anomCol.name, t.nRows) : null;
+  // ML confidence contributions (0..1)
+  const signals = [];
+  if (cluster) signals.push(Math.max(0, Math.min(1, (cluster.silhouette + 0.2) / 0.9))); // silhouette ~ -1..1, good>0.5
+  if (fc) signals.push(Math.max(fc.r2, 1 - Math.min(1, fc.mape)));
+  if (anomalies) signals.push(1 - Math.min(0.5, anomalies.share / 100) / 0.5 * 0.5); // fewer anomalies → cleaner
+  const mlConfidence = signals.length ? +(100 * signals.reduce((s, x) => s + x, 0) / signals.length).toFixed(1) : null;
+  return { cluster, forecast: fc, anomalies, mlConfidence };
+}
+
+
+/* ============================================================================
+   Data Governance — analytics chat engine v2 (deterministic, offline).
+   Adds conversation memory (follow-ups), greetings/help, conversational
+   phrasing, grounding `facts` for the optional LLM layer, and suggested
+   follow-up questions. Every number is computed from real data.
+   Returns { text, chart?, facts, followups? }.
+   ========================================================================== */
+function answerQuestion(question, t, a, ctx) {
+  ctx = ctx || {};
+  const raw = question.trim();
+  const q = ' ' + raw.toLowerCase() + ' ';
+  const cols = t.columns, numeric = a.numeric, categorical = a.categorical, datetime = a.datetime;
+  const data = t.data, imp = t.imputed, nRows = t.nRows;
+  const num = (s) => s.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const has = (...w) => w.some((x) => q.includes(x));
+
+  const byLen = [...cols].sort((x, y) => y.name.length - x.name.length);
+  const qnorm = ' ' + raw.toLowerCase().replace(/[_-]+/g, ' ').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const colNorm = (n) => n.toLowerCase().replace(/[_-]+/g, ' ').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const mentioned = byLen.filter((c) => { const n = colNorm(c.name); return n && qnorm.includes(' ' + n + ' '); });
+  const mNum = mentioned.find((c) => c.type === 'numeric');
+  const mCat = mentioned.find((c) => c.type === 'categorical');
+
+  const measure = mNum || (has('revenue','sales','amount','total','price','value') ? a.measure : null) || ctx.lastMeasure || a.measure || numeric[0];
+  const dimension = mCat || ctx.lastDimension || a.dimension || categorical[0];
+  const remember = (res) => { if (measure) ctx.lastMeasure = measure; if (dimension) ctx.lastDimension = dimension; return res; };
+
+  const nMatch = q.match(/top\s+(\d+)|bottom\s+(\d+)|first\s+(\d+)/);
+  const topN = nMatch ? parseInt(nMatch[1] || nMatch[2] || nMatch[3]) : 8;
+
+  const aggregate = (mCol, dCol, fn) => {
+    const acc = {};
+    for (let i = 0; i < nRows; i++) { const gk = imp[dCol.name][i], v = imp[mCol.name][i]; if (gk === null || v === null) continue; (acc[gk] = acc[gk] || []).push(v); }
+    const rows = Object.entries(acc).map(([k, arr]) => { const sum = arr.reduce((s, x) => s + x, 0); return { key: k, sum, mean: sum / arr.length, count: arr.length }; });
+    const metric = fn === 'mean' ? 'mean' : fn === 'count' ? 'count' : 'sum';
+    rows.sort((x, y) => y[metric] - x[metric]);
+    return { rows, metric };
+  };
+  const contNum = numeric.filter((c) => c.unique > 2); // exclude 0/1-coded columns
+  const followupsFor = (kind) => {
+    const f = [];
+    if (kind !== 'trend' && a.trend) f.push(`trend of ${a.trend.measure} over time`);
+    if (kind !== 'breakdown' && measure && dimension) f.push(`${measure.name} by ${dimension.name}`);
+    if (kind !== 'avg' && measure) f.push(`average ${measure.name}`);
+    if (contNum.length >= 2) f.push(`correlation between ${contNum[0].name} and ${contNum[1].name}`);
+    return f.slice(0, 3);
+  };
+
+  if (/^(hi|hey|hello|yo|howdy|good (morning|afternoon|evening))\b/.test(raw.toLowerCase()))
+    return remember({ text: `Hi! I've analyzed **${ctx.name || 'your dataset'}** — ${nRows.toLocaleString()} rows, ${cols.length} columns. Ask me about totals, averages, trends, correlations, top categories, or data quality.`, facts: { rows: nRows, cols: cols.length }, followups: followupsFor() });
+  if (has('thank', 'thanks', 'thx', 'cheers', 'appreciate'))
+    return { text: 'Anytime. Want me to dig into a trend, a breakdown, or the data-quality signals next?', facts: {}, followups: followupsFor() };
+  if (has('what can you', 'help', 'how do i', 'what should i ask', 'examples'))
+    return { text: `I answer questions computed directly from your data. Try:\n• **totals & averages** — "average ${(measure||{name:'a column'}).name}"\n• **breakdowns** — "${(measure||{name:'value'}).name} by ${(dimension||{name:'category'}).name}"\n• **trends** — "sales over time"\n• **relationships** — "correlation between two columns"\n• **quality** — "which columns have missing values"`, facts: {}, followups: followupsFor() };
+
+  /* ===================== analytical intents (priority) ===================== */
+  // resolve a free-text concept to a real column (name overlap + light synonyms)
+  const SYN = { sex:'gender', bp:'blood pressure', sugar:'glucose', kidney:'creatinin', smoke:'smok', diabetic:'diab' };
+  const resolveCol = (term) => {
+    if (!term) return null; let s = term.toLowerCase().trim().replace(/[^a-z0-9 _]/g, '');
+    for (const k in SYN) if (s.includes(k)) s += ' ' + SYN[k];
+    let hit = byLen.find((c) => { const n = c.name.toLowerCase(); return n === s || n.includes(s) || s.includes(n); });
+    if (hit) return hit;
+    const tks = s.split(/\s+/).flatMap((w) => [w, w.replace(/s$/, '')]).filter((w) => w.length > 2);
+    hit = byLen.find((c) => { const n = c.name.toLowerCase().replace(/[_]/g, ' '); return tks.some((w) => n.includes(w) || w.includes(n)); });
+    return hit || null;
+  };
+  const assocBar = (items, title, key) => ({ type: 'bar', orientation: 'h', x: items.map((x) => x[key]).reverse(), y: items.map((x) => x.feature).reverse(), color: '#F2A968', title });
+
+  const relationship = (A, B) => {
+    if (!A || !B || A.name === B.name) return null;
+    if (A.type === 'numeric' && B.type === 'numeric') {
+      const r = pearson(data[A.name], data[B.name]); if (r === null) return null;
+      const st = Math.abs(r) > 0.6 ? 'strong' : Math.abs(r) > 0.3 ? 'moderate' : 'weak';
+      const xs = [], ys = []; for (let i = 0; i < nRows; i++) { const p = data[A.name][i], u = data[B.name][i]; if (p !== null && u !== null) { xs.push(p); ys.push(u); } }
+      return remember({ text: `**${A.name}** and **${B.name}** have a **${st} ${r < 0 ? 'negative' : 'positive'}** relationship (r = ${r.toFixed(3)}) — as one ${r < 0 ? 'rises, the other tends to fall' : 'rises, so does the other'}.`, facts: { a: A.name, b: B.name, r }, chart: { type: 'scatter', x: xs, y: ys, xt: A.name, yt: B.name, title: `${A.name} vs ${B.name}` }, followups: followupsFor() });
+    }
+    const numCol = [A, B].find((c) => c.type === 'numeric'); const catCol = [A, B].find((c) => c.type !== 'numeric');
+    if (numCol && catCol) {
+      const rows = groupStats(t, numCol.name, catCol.name); if (!rows.length) return null;
+      const hi = [...rows].sort((x, y) => y.mean - x.mean)[0], lo = [...rows].sort((x, y) => x.mean - y.mean)[0];
+      const diff = lo.mean ? Math.abs((hi.mean - lo.mean) / lo.mean) * 100 : 0;
+      return remember({ text: `Average **${numCol.name}** varies by **${catCol.name}**: highest in **${hi.group}** (${num(hi.mean)}), lowest in **${lo.group}** (${num(lo.mean)}) — a ${diff.toFixed(0)}% gap. So ${catCol.name} is ${diff > 15 ? 'clearly' : 'only mildly'} associated with ${numCol.name}.`, facts: { measure: numCol.name, group: catCol.name, rows: rows.map((r) => ({ group: r.group, mean: +r.mean.toFixed(2) })) }, chart: { type: 'bar', x: rows.map((r) => r.group), y: rows.map((r) => r.mean), color: '#F2A968', title: `${numCol.name} by ${catCol.name}` }, followups: followupsFor() });
+    }
+    // both categorical → rate of B across A
+    const acc = {}; for (let i = 0; i < nRows; i++) { const ka = imp[A.name][i], kb = imp[B.name][i]; if (ka == null || kb == null) continue; acc[ka] = acc[ka] || {}; acc[ka][kb] = (acc[ka][kb] || 0) + 1; }
+    const groups = Object.keys(acc).slice(0, 8); const bClasses = [...new Set(Object.values(acc).flatMap((o) => Object.keys(o)))];
+    const focus = bClasses[bClasses.length - 1];
+    const rates = groups.map((g) => { const tot = Object.values(acc[g]).reduce((s, x) => s + x, 0); return { key: g, rate: 100 * (acc[g][focus] || 0) / tot }; });
+    return remember({ text: `Share of **${B.name} = ${focus}** by **${A.name}**: ` + rates.map((r) => `${r.key} ${r.rate.toFixed(0)}%`).join(' · ') + `. ${Math.max(...rates.map((r) => r.rate)) - Math.min(...rates.map((r) => r.rate)) > 10 ? 'The groups differ, suggesting an association.' : 'The rates are similar, suggesting little association.'}`, facts: { a: A.name, b: B.name, focus, rates }, chart: { type: 'bar', x: rates.map((r) => r.key), y: rates.map((r) => r.rate), color: '#F2A968', title: `% ${B.name}=${focus} by ${A.name}`, suffix: '%' }, followups: followupsFor() });
+  };
+
+  // (1) feature importance / factors / associated / indicate / biomarkers / characteristics / significant
+  if (has('which factor', 'contribute most', 'contribute to', 'most associated', 'associated with', 'which feature', 'most important', 'which biomarker', 'which lab', 'laboratory values', 'characteristics indicate', 'characteristics that', 'indicate', 'risk factor', 'drivers', 'what predicts', 'predictors', 'values change', 'change significantly', 'most predictive', 'features are most')) {
+    if (a.assoc && a.assoc.items.length) {
+      let items = a.assoc.items;
+      if (has('increase', 'rise', 'higher with', 'grow', 'with severity', 'with ckd severity', 'severity')) items = items.filter((x) => x.r > 0);
+      const top = items.slice(0, 6).map((x) => ({ ...x, mag: x.abs }));
+      const tgt = a.assoc.target;
+      const lead = top.slice(0, 4).map((x) => `**${x.feature}** (${x.dir === 'increases' ? '↑' : '↓'} r=${x.r})`).join(', ');
+      return remember({ text: `Ranked by association with **${tgt}**, the strongest factors are ${lead}. The arrow shows direction (↑ = higher when ${tgt} is higher); r is the correlation strength.`, facts: { target: tgt, top: top.map((x) => ({ feature: x.feature, r: x.r })) }, chart: assocBar(top, `Association with ${tgt}`, 'mag'), followups: ['compare the groups', `explain the importance of ${top[0].feature}`, 'generate insights'] });
+    }
+  }
+
+  // (2) compare across groups / which group has highest Y / vary across
+  if (has('compare', 'across', 'which stage', 'which group', 'which class', 'highest', 'lowest', 'by stage', 'per stage', 'vary across', 'differ', 'between stages', 'each stage', 'across all')) {
+    const mentGroups = mentioned.filter((c) => c.type === 'categorical' || c.type === 'boolean' || (c.type === 'numeric' && c.unique >= 2 && c.unique <= 12));
+    const mentMeas = mentioned.filter((c) => c.type === 'numeric' && c.unique > 12);
+    let grp = mentGroups[0];
+    if (!grp && has('stage', 'severity', 'group', 'class', 'category')) grp = resolveCol('stage') || resolveCol('severity') || resolveCol('group') || resolveCol('class') || a.target;
+    if (!grp) grp = a.target || (dimension && dimension.type !== 'numeric' ? dimension : null);
+    let meas = mentMeas[0] || (mNum && mNum.unique > 12 ? mNum : null);
+    if (!meas) { const rc = resolveCol(raw.replace(/across.*|by .*|per .*|compare/gi, '')); if (rc && rc.type === 'numeric' && rc !== grp) meas = rc; }
+    if (grp && meas && meas.type === 'numeric' && meas !== grp) {
+      const rows = groupStats(t, meas.name, grp.name);
+      const hi = [...rows].sort((x, y) => y.mean - x.mean)[0];
+      return remember({ text: `Average **${meas.name}** by **${grp.name}** — highest in **${hi.group}** (${num(hi.mean)}). Full breakdown: ` + rows.slice(0, 7).map((r) => `${r.group}: ${num(r.mean)}`).join(' · ') + '.', facts: { measure: meas.name, group: grp.name, rows: rows.map((r) => ({ group: r.group, mean: +r.mean.toFixed(2), n: r.n })) }, chart: { type: 'bar', x: rows.map((r) => r.group), y: rows.map((r) => r.mean), color: '#F2A968', title: `${meas.name} by ${grp.name}` }, followups: followupsFor() });
+    }
+    if (a.target) {
+      const cg = compareGroups(t, a.target);
+      if (cg && cg.items.length) { const top = cg.items.slice(0, 6);
+        return remember({ text: `Comparing **${cg.c0}** vs **${cg.c1}** (by ${a.target.name}), the features that differ most are ` + top.slice(0, 4).map((x) => `**${x.feature}** (${num(x.g0)} \u2192 ${num(x.g1)})`).join(', ') + '.', facts: { target: a.target.name, groups: [cg.c0, cg.c1], top: top.map((x) => ({ feature: x.feature, g0: x.g0, g1: x.g1, d: x.d })) }, chart: assocBar(top, `Biggest differences: ${cg.c0} vs ${cg.c1}`, 'abs'), followups: ['which factors contribute most', 'generate insights'] });
+      }
+    }
+  }
+
+  // (3) how does A affect B / relationship between A and B / influence
+  if (has('how does', 'how do', 'affect', 'influence', 'impact of', 'relationship between', 'related to', 'effect of', 'vary with', 'depend on', 'associated', 'does gender', 'does age', 'linked to')) {
+    let A = null, B = null;
+    let m = raw.toLowerCase().match(/relationship between\s+(.+?)\s+and\s+(.+)/);
+    if (m) { A = resolveCol(m[1]); B = resolveCol(m[2]); }
+    if (!A || !B) { m = raw.toLowerCase().match(/(?:how (?:does|do)|effect of|impact of|does)\s+(.+?)\s+(?:affect|influence|impact|relate to|vary with|on|associated with|linked to)\s+(.+)/); if (m) { A = resolveCol(m[1]); B = resolveCol(m[2]); } }
+    if (!A && !B) { const ms = mentioned.slice(0, 2); if (ms.length === 2) { A = ms[0]; B = ms[1]; } }
+    let res = null;
+    if (A && B) res = relationship(A, B);
+    else if (A && a.target) res = relationship(A, a.target);
+    else if (B && a.target) res = relationship(B, a.target);
+    if (res) return res;
+  }
+
+  // (4) explain importance / significance / role of a column
+  if (has('importance of', 'importance', 'significance of', 'role of', 'why is', 'explain the', 'what does', 'meaning of')) {
+    const col = mentioned[0] || resolveCol(raw.replace(/.*(importance of|significance of|role of|explain the|meaning of|what does)\s*/i, ''));
+    if (col && col.type === 'numeric') {
+      const s = stats(data[col.name]); const it = a.assoc && a.assoc.items.find((x) => x.feature === col.name);
+      return remember({ text: `**${col.name}** ranges ${num(s.min)}–${num(s.max)} (mean ${num(s.mean)}, median ${num(s.median)}).${it ? ` It is **${it.abs > 0.5 ? 'strongly' : it.abs > 0.3 ? 'moderately' : 'weakly'} associated** with ${a.assoc.target} (r = ${it.r}) and ${it.dir === 'increases' ? 'rises' : 'falls'} as ${a.assoc.target} increases.` : ''}`, facts: { column: col.name, r: it ? it.r : null }, chart: { type: 'hist', x: data[col.name].filter((v) => v !== null), color: '#F2A968', title: `Distribution of ${col.name}` }, followups: followupsFor() });
+    }
+  }
+
+  // (5) generate insights / clinical insights / key findings
+  if (has('generate', 'clinical insight', 'key insight', 'insights from', 'key finding', 'give me insights', 'summarize the finding', 'main takeaway', 'what stands out')) {
+    const parts = [];
+    if (a.assoc && a.assoc.items.length) { const top = a.assoc.items.slice(0, 3); parts.push(`Strongest factors linked to **${a.assoc.target}**: ${top.map((x) => `${x.feature} (r=${x.r})`).join(', ')}.`); }
+    if (a.insights[0]) parts.push(a.insights[0].text);
+    if (a.insights[1]) parts.push(a.insights[1].text);
+    if (a.trend) parts.push(`${a.trend.measure} is trending ${a.trend.direction} (${a.trend.pctChange > 0 ? '+' : ''}${a.trend.pctChange}%).`);
+    if (a.corr[0]) parts.push(`Strongest correlation: ${a.corr[0].a} ↔ ${a.corr[0].b} (r=${a.corr[0].r}).`);
+    return remember({ text: `**Key insights**\n` + parts.map((p) => '• ' + p).join('\n'), facts: {}, chart: a.assoc && a.assoc.items.length ? assocBar(a.assoc.items.slice(0, 6).map((x) => ({ ...x, mag: x.abs })), `Top factors for ${a.assoc.target}`, 'mag') : null, followups: ['which factors contribute most', 'compare the groups'] });
+  }
+
+  // (6) filtered / conditional queries: "how many X over 60", "average Y for Electronics", "what % are male"
+  const STOP = new Set(['the','and','for','are','was','with','how','many','what','average','mean','count','number','rows','total','sum','percentage','percent','share','proportion','patients','records','which','have','has','that','over','under','above','below','more','less','than','least','most','equal','equals']);
+  const buildMask = (excludeCol) => {
+    const mask = new Array(nRows).fill(true); const descs = []; let any = false, ambiguous = false;
+    const low = raw.toLowerCase();
+    const opRe = /(>=|<=|==|>|<|=|greater than or equal|less than or equal|at least|at most|greater than|less than|more than|over|above|under|below|equals?)\s*(?:age[d]?\s*(?:of\s*)?)?(-?\d[\d,.]*)/gi;
+    let m;
+    while ((m = opRe.exec(low))) {
+      const val = parseFloat(m[2].replace(/,/g, '')); if (!isFinite(val)) continue;
+      const ot = m[1];
+      const op = /(>=|at least|greater than or equal)/.test(ot) ? '>=' : /(<=|at most|less than or equal)/.test(ot) ? '<=' : /(>|over|above|greater|more)/.test(ot) ? '>' : /(<|under|below|less)/.test(ot) ? '<' : '=';
+      const pre = low.slice(0, m.index).replace(/[_-]/g, ' ');
+      let col = byLen.find((c) => c.type === 'numeric' && c !== excludeCol && new RegExp('\\b' + colNorm(c.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(pre));
+      if (!col) {
+        const cands = numeric.filter((c) => c !== excludeCol);
+        const within = cands.filter((c) => { const s = stats(data[c.name]); return s && val >= s.min && val <= s.max; });
+        const pool = within.length ? within : cands;
+        col = pool.find((c) => /age/i.test(c.name)) || (pool.length === 1 ? pool[0] : within.length === 1 ? within[0] : null);
+        if (!col && pool.length) { ambiguous = true; continue; }
+      }
+      if (!col) continue;
+      for (let i = 0; i < nRows; i++) { const v = data[col.name][i]; if (v === null) { mask[i] = false; continue; } const ok = op === '>' ? v > val : op === '<' ? v < val : op === '>=' ? v >= val : op === '<=' ? v <= val : v === val; if (!ok) mask[i] = false; }
+      descs.push(`${col.name} ${op} ${val}`); any = true;
+    }
+    for (const c of cols) {
+      if (c.type !== 'categorical' && c.type !== 'boolean') continue;
+      const vals = [...new Set(imp[c.name].filter((v) => v != null))];
+      for (const val of vals) {
+        const vn = String(val).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').trim();
+        if (vn.length < 3 || STOP.has(vn)) continue;
+        if (qnorm.includes(' ' + vn + ' ')) { for (let i = 0; i < nRows; i++) { if (String(imp[c.name][i]).toLowerCase() !== String(val).toLowerCase()) mask[i] = false; } descs.push(`${c.name} = ${val}`); any = true; break; }
+      }
+    }
+    if (!any) return ambiguous ? { ambiguous: true } : null;
+    const count = mask.reduce((s, b) => s + (b ? 1 : 0), 0);
+    return { mask, desc: descs.join(' and '), count };
+  };
+  if (has('how many', 'count', 'number of', 'percentage', 'percent', 'share', 'proportion', ' over ', ' under ', ' above ', ' below ', 'greater than', 'less than', 'more than', 'at least', 'at most', ' for ', ' where ', 'what % ')) {
+    const aggWord = has('average', 'mean', 'avg', 'sum', 'total', 'max', 'maximum', 'min', 'minimum', 'median');
+    const measHint = mentioned.find((c) => c.type === 'numeric') || (aggWord ? (a.measure || numeric[0]) : null);
+    const filt = buildMask(aggWord ? measHint : null);
+    if (filt && filt.ambiguous) {
+      return { text: `I found a numeric condition but couldn't tell which column you mean. Your numeric columns are ${numeric.map((c) => c.name).join(', ')} \u2014 name one, e.g. "how many where ${(numeric[0] || {}).name} > 60".`, facts: {}, followups: followupsFor() };
+    }
+    if (filt) {
+      const pct = (100 * filt.count / nRows).toFixed(1);
+      const meas = (aggWord ? measHint : null) || mentioned.find((c) => c.type === 'numeric' && !filt.desc.includes(c.name));
+      if (aggWord && meas) {
+        const vals = []; for (let i = 0; i < nRows; i++) if (filt.mask[i] && data[meas.name][i] !== null) vals.push(data[meas.name][i]);
+        const s = stats(vals);
+        if (s) { let val, word;
+          if (has('average', 'mean', 'avg')) { val = s.mean; word = 'average'; }
+          else if (has('median')) { val = s.median; word = 'median'; }
+          else if (has('max', 'maximum')) { val = s.max; word = 'maximum'; }
+          else if (has('min', 'minimum')) { val = s.min; word = 'minimum'; }
+          else { val = s.sum; word = 'total'; }
+          return { text: `Among rows where **${filt.desc}** (${filt.count.toLocaleString()} rows), the **${word} of ${meas.name}** is **${num(val)}**.`, facts: { filter: filt.desc, n: filt.count, [word]: +val.toFixed(2) }, followups: followupsFor() };
+        }
+      }
+      return { text: `**${filt.count.toLocaleString()}** rows match **${filt.desc}** \u2014 that's **${pct}%** of ${nRows.toLocaleString()} total.`, facts: { filter: filt.desc, count: filt.count, pct: +pct }, followups: followupsFor() };
+    }
+  }
+
+  if (has('how many row', 'number of row', 'how many record', 'row count', 'how big', 'size of', 'how many entries'))
+    return remember({ text: `Your dataset has **${nRows.toLocaleString()} rows** and **${cols.length} columns** after cleaning (${numeric.length} numeric, ${categorical.length} categorical, ${datetime.length} date).`, facts: { rows: nRows, cols: cols.length }, followups: followupsFor() });
+
+  if (has('missing', 'null', 'empty value', 'incomplete', 'blank', 'gaps')) {
+    const miss = cols.filter((c) => c.missingPct > 0).sort((x, y) => y.missingPct - x.missingPct);
+    if (!miss.length) return { text: 'Good news — **no missing values** remain. Every column is complete after cleaning.', facts: { missing: 0 }, followups: followupsFor() };
+    const top = miss.slice(0, 6);
+    return { text: `**${miss.length} column${miss.length > 1 ? 's have' : ' has'} missing data.** The gaps are largest in ` + top.map((c) => `**${c.name}** (${c.missingPct}%)`).join(', ') + `. These were imputed for analysis (median for numbers, mode for categories).`,
+      facts: { columns_with_missing: miss.length, worst: top.map((c) => ({ column: c.name, pct: c.missingPct })) },
+      chart: { type: 'bar', orientation: 'h', x: top.map((c) => c.missingPct), y: top.map((c) => c.name), color: '#F2C24B', title: 'Missing % by column', suffix: '%' }, followups: followupsFor() };
+  }
+
+  const twoNumsMentioned = mentioned.filter((c) => c.type === 'numeric').slice(0, 2);
+  const wantsCorr = has('correlation', 'correlate', 'correlated') ||
+    (twoNumsMentioned.length === 2 && has('relationship', 'related', 'vs', 'versus', 'against', 'compare', 'associated'));
+  if (wantsCorr) {
+    const twoNums = twoNumsMentioned;
+    if (twoNums.length === 2) {
+      const r = pearson(data[twoNums[0].name], data[twoNums[1].name]);
+      const strength = r === null ? 'no measurable' : Math.abs(r) > 0.6 ? 'strong' : Math.abs(r) > 0.3 ? 'moderate' : 'weak';
+      const xs = [], ys = [];
+      for (let i = 0; i < nRows; i++) { const a1 = data[twoNums[0].name][i], b1 = data[twoNums[1].name][i]; if (a1 !== null && b1 !== null) { xs.push(a1); ys.push(b1); } }
+      return { text: `**${twoNums[0].name}** and **${twoNums[1].name}** show a **${strength}${r !== null ? ` ${r < 0 ? 'negative' : 'positive'}` : ''} correlation** (r = ${r === null ? 'n/a' : r.toFixed(3)}).${r !== null && Math.abs(r) < 0.3 ? ' In practice they move fairly independently.' : ''}`,
+        facts: { a: twoNums[0].name, b: twoNums[1].name, r }, chart: { type: 'scatter', x: xs, y: ys, xt: twoNums[0].name, yt: twoNums[1].name, title: `${twoNums[0].name} vs ${twoNums[1].name}` }, followups: followupsFor() };
+    }
+    if (a.corr.length) { const c = a.corr[0]; return { text: `Name two numeric columns and I'll measure their correlation for you. For reference, the strongest pair in this dataset is **${c.a} ↔ ${c.b}** (r = ${c.r}).`, facts: { top_pair: c }, followups: followupsFor() }; }
+  }
+
+  if (has('trend', 'over time', 'by month', 'monthly', 'time series', 'growth', 'evolution', 'seasonal', 'trending')) {
+    if (a.trend) { const tr = a.trend;
+      return remember({ text: `**${tr.measure}** is trending **${tr.direction}** — ${tr.pctChange > 0 ? '+' : ''}${tr.pctChange}% from ${tr.keys[0]} to ${tr.keys[tr.keys.length - 1]} across ${tr.keys.length} months.`,
+        facts: { measure: tr.measure, direction: tr.direction, pct_change: tr.pctChange }, chart: { type: 'line', x: tr.keys, y: tr.series, color: '#F2A968', title: `${tr.measure} over time` }, followups: followupsFor('trend') });
+    }
+    return { text: "There's no date column here, so I can't plot a time trend. I can still break this down by a category or summarize a numeric column.", facts: {}, followups: followupsFor() };
+  }
+
+  if (has('top', 'bottom', 'break down', 'breakdown', ' by ', ' per ', 'group', 'rank', 'best', 'worst', 'highest', 'lowest', 'which ', 'what about', 'compare')) {
+    if (measure && dimension) {
+      const fn = has('average', 'mean', 'avg') ? 'mean' : has('count', 'how many') ? 'count' : 'sum';
+      const { rows, metric } = aggregate(measure, dimension, fn);
+      const ascending = has('bottom', 'worst', 'lowest');
+      const view = (ascending ? [...rows].reverse() : rows).slice(0, topN);
+      const label = metric === 'mean' ? `average ${measure.name}` : metric === 'count' ? 'record count' : `total ${measure.name}`;
+      const lead = view[0], total = rows.reduce((s, r) => s + r[metric], 0);
+      const share = total ? ((lead[metric] / total) * 100).toFixed(1) : '0';
+      return remember({ text: `By **${label}**, **${lead.key}** leads ${dimension.name} at **${num(lead[metric])}** (${share}% of the total)${view[1] ? `, followed by **${view[1].key}** (${num(view[1][metric])})` : ''}.`,
+        facts: { measure: measure.name, dimension: dimension.name, metric, top: view.slice(0, 5).map((r) => ({ key: r.key, value: +r[metric].toFixed(2) })) },
+        chart: { type: 'bar', x: view.map((r) => r.key), y: view.map((r) => r[metric]), color: '#F2A968', title: `${label} by ${dimension.name}` }, followups: followupsFor('breakdown') });
+    }
+  }
+
+  if (has('average', 'mean', 'sum', 'total', 'max', 'maximum', 'min', 'minimum', 'median', 'avg', 'typical')) {
+    if (measure && (mentioned.some((c) => c.type === 'numeric') || has('revenue','sales','amount','total','price','value','it','that','this'))) {
+      const s = stats(data[measure.name]);
+      if (s) { let val, word;
+        if (has('average', 'mean', 'avg', 'typical')) { val = s.mean; word = 'average'; }
+        else if (has('median')) { val = s.median; word = 'median'; }
+        else if (has('max', 'maximum', 'highest', 'largest')) { val = s.max; word = 'maximum'; }
+        else if (has('min', 'minimum', 'lowest', 'smallest')) { val = s.min; word = 'minimum'; }
+        else { val = s.sum; word = 'total'; }
+        return remember({ text: `The **${word} of ${measure.name}** is **${num(val)}**.\nAcross ${s.n.toLocaleString()} values it ranges ${num(s.min)}\u2013${num(s.max)}, averaging ${num(s.mean)} (median ${num(s.median)}).`,
+          facts: { column: measure.name, [word]: +val.toFixed(2), min: s.min, max: s.max, mean: +s.mean.toFixed(2) },
+          chart: { type: 'hist', x: data[measure.name].filter((v) => v !== null), color: '#F2A968', title: `Distribution of ${measure.name}` }, followups: followupsFor('avg') });
+      }
+    }
+  }
+
+  if (has('distribution', 'histogram', 'spread', 'how are', 'range of', 'values of', 'vary')) {
+    if (measure && (mentioned.some((c) => c.type === 'numeric') || ctx.lastMeasure)) {
+      const s = stats(data[measure.name]);
+      return remember({ text: `**${measure.name}** ranges from ${num(s.min)} to ${num(s.max)}, centered near ${num(s.median)} (mean ${num(s.mean)}, std ${num(s.std)}).`,
+        facts: { column: measure.name, min: s.min, max: s.max, median: s.median }, chart: { type: 'hist', x: data[measure.name].filter((v) => v !== null), color: '#F2A968', title: `Distribution of ${measure.name}` }, followups: followupsFor() });
+    }
+    if (mCat) { const counts = {}; for (let i = 0; i < nRows; i++) { const v = imp[mCat.name][i]; if (v !== null) counts[v] = (counts[v] || 0) + 1; }
+      const rows = Object.entries(counts).sort((x, y) => y[1] - x[1]).slice(0, 12);
+      return remember({ text: `**${mCat.name}** has **${Object.keys(counts).length} categories**. Most common is **${rows[0][0]}** (${rows[0][1]} rows).`,
+        facts: { column: mCat.name, categories: Object.keys(counts).length }, chart: { type: 'bar', x: rows.map((r) => r[0]), y: rows.map((r) => r[1]), color: '#E67E4D', title: `Count by ${mCat.name}` }, followups: followupsFor() });
+    }
+  }
+
+  if (has('unique', 'distinct', 'how many different', 'categories', 'kinds of')) {
+    const c = mentioned[0]; if (c) return remember({ text: `**${c.name}** has **${c.unique.toLocaleString()} unique value${c.unique > 1 ? 's' : ''}** (type: ${c.type}).`, facts: { column: c.name, unique: c.unique }, followups: followupsFor() });
+  }
+
+  if (has('describe', 'summary', 'summarize', 'tell me about', 'overview', 'what is this', 'what data', 'explain the data'))
+    return remember({ text: `This dataset has **${nRows.toLocaleString()} rows** and **${cols.length} columns** (${numeric.length} numeric, ${categorical.length} categorical, ${datetime.length} date).\nThe headline finding: ${a.insights[0].text} ${a.insights[1] ? 'Also worth noting: ' + a.insights[1].text : ''}`, facts: { rows: nRows, cols: cols.length }, followups: followupsFor() });
+  if (has('confidence', 'reliable', 'quality', 'trust', 'governance', 'score', 'how good'))
+    return { text: `The current confidence score reflects seven signals \u2014 completeness, validity, uniqueness, type clarity, stability, sample robustness and field richness. Open the **Governance** view for the full breakdown and verdict.`, facts: {}, followups: followupsFor() };
+
+  /* open-ended / domain question we can't compute from columns */
+  const isQuestion = /\?/.test(raw) || /^(how|why|what|does|do|can|is|are|will|would|should|which|explain|tell|describe|cause|impact|effect|predict|diagnose)\b/.test(raw.toLowerCase());
+  if (isQuestion && !mentioned.length) {
+    const colList = cols.slice(0, 8).map((c) => c.name).join(', ');
+    const ex = [];
+    if (contNum.length >= 2) ex.push(`correlation between ${contNum[0].name} and ${contNum[1].name}`);
+    if (measure) ex.push(`average ${measure.name}`);
+    if (measure && dimension) ex.push(`${measure.name} by ${dimension.name}`);
+    return { text: `I answer by computing directly from **this dataset**, so I can't reason about outside knowledge or causation the way a general chatbot can.\n\nYour columns are: ${colList}${cols.length > 8 ? '\u2026' : ''}. Ask me to compute something from them \u2014 e.g. ${ex.slice(0, 2).map((e) => `"${e}"`).join(' or ')}.\n\n**Want GPT/Claude-style answers to open questions like this?** Turn on **AI mode** at the top of this panel and add a key \u2014 then I'll answer conversationally, grounded in your data.`,
+      facts: {}, followups: followupsFor() };
+  }
+
+  return { text: `I compute answers straight from your data. Try ${followupsFor().map((f) => `"${f}"`).join(', ')} \u2014 or ask about totals, averages, missing values, or a specific column. For open-ended questions, turn on **AI mode** above.`, facts: {}, followups: followupsFor() };
+}
+
+
+
+/* ========================= app controller ========================= */
+const $=(id)=>document.getElementById(id);
+const toneColor={good:'var(--good)',ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)'};
+const toneHex={good:'#3FD99A',ok:'#F2C24B',warn:'#F2914B',bad:'#F2605A'};
+const fmt=(n)=>n===null||n===undefined||!isFinite(n)?'—':Math.abs(n)>=1000?n.toLocaleString(undefined,{maximumFractionDigits:0}):Number.isInteger(n)?String(n):n.toFixed(2);
+const mdBold=(s)=>s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+let LAST=null, RENDERED={};
+
+/* ---- navigation ---- */
+const VIEWS=[
+  {id:'overview',label:'Overview',ic:'M4 13h6V4H4v9zm0 7h6v-5H4v5zm9 0h7V11h-7v9zm0-16v5h7V4h-7z'},
+  {id:'transform',label:'Transform',ic:'M4 7h11M4 7l3-3M4 7l3 3M20 17H9m11 0l-3-3m3 3l-3 3'},
+  {id:'insights',label:'Insights',ic:'M9 21h6M10 21v-3M14 21v-3M12 3a6 6 0 00-4 10.5c.7.6 1 1 1 1.5h6c0-.5.3-.9 1-1.5A6 6 0 0012 3z'},
+  {id:'visualize',label:'Visualizations',ic:'M4 20V10M10 20V4M16 20v-7M22 20H2'},
+  {id:'ml',label:'ML pipeline',ic:'M12 3v3m0 12v3M3 12h3m12 0h3M6.3 6.3l2.1 2.1m7.2 7.2l2.1 2.1m0-11.4l-2.1 2.1M8.4 15.6l-2.1 2.1M15 12a3 3 0 11-6 0 3 3 0 016 0z'},
+  {id:'chat',label:'Analytics chat',ic:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'},
+  {id:'gov',label:'Governance',ic:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'},
+  {id:'review',label:'Opus Review',ic:'M9 12l2 2 4-4M7.8 4.7a2 2 0 012.4-.6l.3.1a2 2 0 001.8 0l.3-.1a2 2 0 012.4.6l.2.2a2 2 0 001.6.7l.3-.1a2 2 0 012 1.9v.4a2 2 0 00.7 1.6l.2.2a2 2 0 01-.4 2.6l-.2.3a2 2 0 000 1.8l.2.3a2 2 0 01-2 3l-.3-.1a2 2 0 00-1.6.7l-.2.2a2 2 0 01-2.4.6l-.3-.1a2 2 0 00-1.8 0l-.3.1a2 2 0 01-2.4-.6l-.2-.2a2 2 0 00-1.6-.7l-.3.1a2 2 0 01-2-1.9v-.4a2 2 0 00-.7-1.6l-.2-.2a2 2 0 01.4-2.6z'},
+];
+const TITLES={overview:'Overview',transform:'Transform',insights:'Insights',visualize:'Visualizations',ml:'ML pipeline',chat:'Analytics chat',gov:'Governance',review:'Claude Opus Review Dashboard'};
+function buildNav(){
+  $('nav').innerHTML=VIEWS.map(v=>`<li><button data-v="${v.id}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="${v.ic}" stroke-linecap="round" stroke-linejoin="round"/></svg>${v.label}</button></li>`).join('');
+  $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{showView(b.dataset.v);$('sidebar').classList.remove('open');});
+}
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('show'));
+  $('v-'+id).classList.add('show');
+  $('nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.v===id));
+  $('vtitle').textContent=TITLES[id];
+  if(!RENDERED[id]){ (VIEW_RENDER[id]||(()=>{}))(); RENDERED[id]=true; }
+  // resize any plots in this view
+  setTimeout(()=>{ if(window.Plotly) $('v-'+id).querySelectorAll('.js-plotly-plot').forEach(p=>{try{Plotly.Plots.resize(p);}catch(e){}}); },60);
+}
+
+/* ---- sample data ---- */
+function sampleCSV(){
+  const cats=['Electronics','Clothing','Grocery','Home','Beauty'],regions=['North','South','East','West'];
+  const rows=[['Date','Customer','Region','Category','Units','Unit Price','Revenue','Satisfaction']];
+  const start=new Date(Date.UTC(2024,0,1));
+  for(let i=0;i<1400;i++){
+    const d=new Date(start.getTime()+Math.floor(Math.random()*330)*86400000);
+    const cat=cats[Math.floor(Math.random()*cats.length)];
+    const base={Electronics:180,Clothing:120,Grocery:90,Home:150,Beauty:110}[cat];
+    const units=1+Math.floor(Math.random()*5);
+    const price=+(base*(0.85+Math.random()*0.4)).toFixed(2);
+    let rev=+(units*price).toFixed(2);
+    if(Math.random()<0.008) rev=+(rev*4).toFixed(2);
+    const sat=Math.random()<0.06?'':(2.5+Math.random()*2.5).toFixed(1);
+    rows.push([d.toISOString().slice(0,10),'C'+(1000+i),regions[Math.floor(Math.random()*4)],cat,units,'$'+price,'$'+rev.toFixed(2),sat]);
+  }
+  rows.push(rows[5].slice()); rows.push(rows[9].slice());
+  return rows.map(r=>r.join(',')).join('\n');
+}
+
+/* ---- ingest + processing animation ---- */
+const STAGES=['Ingesting rows','Inferring types','Cleaning & imputing','Detecting outliers','Analyzing & correlating','Training ML models','Scoring governance'];
+function runProcessing(done){
+  const lz=$('landing'); if(lz)lz.classList.add('leaving');
+  $('overlay').classList.remove('hidden');
+  const host=$('proc-stages'); 
+  host.innerHTML=STAGES.map((s,i)=>`<div class="pstage" id="ps-${i}"><div class="dot"><div class="spin"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lbl">${s}</div></div>`).join('');
+  let i=0; const step=()=>{
+    if(i>0){$('ps-'+(i-1)).classList.add('done');}
+    if(i>=STAGES.length){ $('proc-fill').style.width='100%'; setTimeout(()=>{$('overlay').classList.add('hidden');done();},280); return; }
+    $('ps-'+i).classList.add('on'); $('proc-fill').style.width=Math.round((i/STAGES.length)*100)+'%';
+    i++; setTimeout(step, 230+Math.random()*120);
+  }; step();
+}
+/* built-in CSV parser — no external library, works fully offline.
+   Handles quoted fields, embedded commas/newlines, escaped "" quotes, BOM, CRLF. */
+function parseCSV(text){
+  text=String(text).replace(/^\uFEFF/,'');
+  const rows=[]; let row=[], field='', i=0, inQ=false; const n=text.length;
+  while(i<n){ const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"';i+=2;continue;} inQ=false;i++;continue; }
+      field+=c;i++;continue;
+    } else {
+      if(c==='"'){inQ=true;i++;continue;}
+      if(c===','){row.push(field);field='';i++;continue;}
+      if(c==='\r'){i++;continue;}
+      if(c==='\n'){row.push(field);rows.push(row);row=[];field='';i++;continue;}
+      field+=c;i++;continue;
+    }
+  }
+  if(field!==''||row.length){row.push(field);rows.push(row);}
+  if(!rows.length) return {data:[],meta:{fields:[]}};
+  const fields=rows[0].map(h=>(h||'').trim());
+  const data=[];
+  for(let r=1;r<rows.length;r++){ const cells=rows[r];
+    if(cells.length===1 && (cells[0]===''||cells[0]==null)) continue;
+    const o={}; fields.forEach((f,idx)=>o[f]=cells[idx]!==undefined?cells[idx]:''); data.push(o);
+  }
+  return {data,meta:{fields}};
+}
+function showLandingErr(msg){ const el=$('landing-err'); if(el) el.innerHTML='<div class="err">'+msg+'</div>'; }
+
+function handleParsed(res,name){
+  $('landing-err').innerHTML='';
+  const headers=(res.meta.fields||[]).filter(h=>h!=null&&h!=='');
+  const rows=res.data.filter(r=>headers.some(h=>r[h]!==''&&r[h]!=null));
+  if(!headers.length||!rows.length){ showLandingErr('No readable rows or columns found. Make sure it\u2019s a CSV or Excel file with a header row.'); return; }
+  let out; try{ out=runPipeline(rows,headers); out.ml=runML(out.t,out.a); }
+  catch(e){ showLandingErr('Could not process that dataset: '+e.message); return; }
+  LAST={name,...out};
+  runProcessing(()=>mountApp());
+}
+function readFile(f){
+  if(!f) return;
+  const name=(f.name||'').toLowerCase();
+  const reader=new FileReader();
+  if(/\.(xlsx|xls|xlsm)$/.test(name)){
+    if(!window.XLSX){ showLandingErr('Reading Excel files needs an internet connection to load the spreadsheet reader. Reconnect and retry, or upload a CSV.'); return; }
+    reader.onload=()=>{ try{
+      const wb=XLSX.read(new Uint8Array(reader.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const csv=XLSX.utils.sheet_to_csv(ws);
+      handleParsed(parseCSV(csv),f.name);
+    }catch(e){ showLandingErr('Could not read that Excel file: '+e.message); } };
+    reader.onerror=()=>showLandingErr('Could not read that file — try a different spreadsheet.');
+    try{ reader.readAsArrayBuffer(f); }catch(e){ showLandingErr('Could not read that file: '+e.message); }
+  } else {
+    reader.onload=()=>{ try{ handleParsed(parseCSV(reader.result),f.name); }catch(e){ showLandingErr('Could not read that file: '+e.message); } };
+    reader.onerror=()=>showLandingErr('Could not read that file — try a different CSV.');
+    try{ reader.readAsText(f); }catch(e){ showLandingErr('Could not read that file: '+e.message); }
+  }
+}
+function loadSample(){ try{ handleParsed(parseCSV(sampleCSV()),'sample_retail_sales.csv'); }catch(e){ showLandingErr('Could not load sample: '+e.message); } }
+
+/* ---- mount ---- */
+function mountApp(){
+  const {t,g}=LAST;
+  $('landing').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('m-name').textContent=LAST.name; $('m-rows').textContent=t.nRows.toLocaleString(); $('m-cols').textContent=t.columns.length;
+  $('sb-score-v').textContent=g.score; $('sb-score-v').style.color=toneColor[g.band.tone];
+  const bd=$('sb-score-band'); bd.textContent=g.band.label; bd.className='band '+g.band.tone;
+  RENDERED={};
+  buildChatChips(); resetChat();
+  showView('overview');
+}
+
+/* ================= per-view renderers ================= */
+const VIEW_RENDER={
+  overview:renderOverview, transform:renderTransform, insights:renderInsights,
+  visualize:renderVisualize, ml:renderML, chat:()=>{}, gov:renderGovernance, review:mountReviewView
+};
+
+function countUp(el,to,suffix=''){
+  const dur=900, t0=performance.now(); const isInt=Number.isInteger(to);
+  const tick=(now)=>{ const p=Math.min(1,(now-t0)/dur); const e=1-Math.pow(1-p,3); const val=to*e;
+    el.textContent=(isInt?Math.round(val).toLocaleString():val.toFixed(1))+suffix; if(p<1)requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+}
+
+function renderOverview(){
+  const {t,a,g,ml}=LAST;
+  animateGauge($('ov-gauge'),g.score,g.band.tone);
+  const num=$('ov-num'); num.style.color=toneColor[g.band.tone]; countUp(num,g.score);
+  const bd=$('ov-band'); bd.textContent=g.band.label; bd.className='gband '+g.band.tone;
+  const completeness=g.parts.find(p=>p.key==='Completeness').value;
+  const tiles=[
+    ['Rows',t.nRows,''],['Columns',t.columns.length,''],
+    ['Completeness',completeness,'%'],['ML confidence',ml.mlConfidence??0,ml.mlConfidence==null?'':'']
+  ];
+  $('ov-tiles').innerHTML=tiles.map((_,i)=>`<div class="tile reveal" style="animation-delay:${i*70}ms"><div class="k">${tiles[i][0]}</div><div class="v" id="ovt-${i}">0</div></div>`).join('');
+  tiles.forEach((tl,i)=>countUp($('ovt-'+i),tl[1],tl[2]));
+  $('ov-insights').innerHTML=a.insights.slice(0,3).map((x,i)=>insCard(x,i)).join('');
+}
+
+function insCard(x,i){const tag={trend:'TREND',quality:'QUALITY',stat:'SIGNAL'}[x.kind];
+  return `<div class="ins ${x.kind} reveal" style="animation-delay:${i*70}ms"><span class="tag">${tag}</span><p>${mdBold(x.text)}</p></div>`;}
+
+function renderTransform(){
+  const {t}=LAST;
+  const tiles=[['Rows in',t.nRawRows],['Rows out',t.nRows],['Duplicates removed',t.dupCount],
+    ['Fields typed',t.columns.filter(c=>c.type!=='text'&&c.type!=='empty').length+' / '+t.columns.length],['Operations',t.log.length]];
+  $('tr-tiles').innerHTML=tiles.map((tl,i)=>`<div class="tile reveal" style="animation-delay:${i*60}ms"><div class="k">${tl[0]}</div><div class="v">${typeof tl[1]==='number'?tl[1].toLocaleString():tl[1]}</div></div>`).join('');
+  const chk='<svg class="chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  $('tr-log').innerHTML=t.log.length?t.log.map(o=>`<li>${chk}<div><span class="op">${o.op}</span> — <span class="dt">${o.detail}</span></div></li>`).join(''):`<li>${chk}<div><span class="op">Already clean</span> — <span class="dt">no transformations required</span></div></li>`;
+  $('tr-table').innerHTML=`<thead><tr><th>Column</th><th>Type</th><th>Unique</th><th>Missing</th><th>Validity</th></tr></thead><tbody>${
+    t.columns.map(c=>`<tr><td>${c.name}</td><td><span class="pill ${c.type}">${c.type}</span></td><td class="num">${c.unique.toLocaleString()}</td><td class="bar-cell"><div class="f" style="width:${Math.min(100,c.missingPct)}%"></div><span>${c.missingPct}%</span></td><td class="num">${Math.round((c.validity??1)*100)}%</td></tr>`).join('')}</tbody>`;
+}
+
+function renderInsights(){
+  const {a}=LAST;
+  $('in-list').innerHTML=a.insights.map((x,i)=>insCard(x,i)).join('');
+}
+
+/* ---- charts ---- */
+const PFONT={family:'IBM Plex Mono, monospace',size:11,color:'#A99DAA'};
+const LAYOUT=(o={})=>Object.assign({margin:{l:52,r:16,t:8,b:42},font:PFONT,paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',xaxis:{gridcolor:'rgba(255,255,255,.07)',zeroline:false,linecolor:'rgba(255,255,255,.12)'},yaxis:{gridcolor:'rgba(255,255,255,.07)',zeroline:false,linecolor:'rgba(255,255,255,.12)'},showlegend:false},o);
+const CFG={displayModeBar:false,responsive:true};
+const COB='#F2A968';const COB2='#5FD6C6';const WARM='#E67E4D';
+function plot(id,data,layout){
+  const el=document.getElementById(id); if(!el) return;
+  if(!window.Plotly){ el.innerHTML='<div style="padding:22px 16px;color:var(--tx-mut);font-size:12.5px;text-align:center">Chart needs an internet connection to render (Plotly). Every other result — transformation, insights, ML metrics, governance — still works offline.</div>'; return; }
+  try{ Plotly.newPlot(id,data,layout,CFG); }catch(e){}
+}
+
+function renderVisualize(){
+  const {t,a}=LAST; const host=$('viz-grid'); host.innerHTML='';
+  const add=(id,title,span,tall)=>{host.insertAdjacentHTML('beforeend',`<div class="chart${tall?' tall':''}" style="${span?'grid-column:1/-1;':''}margin-bottom:16px"><h4>${title}</h4><div class="plot" id="${id}"></div></div>`);};
+  host.style.display='grid'; host.style.gridTemplateColumns='1fr 1fr'; host.style.gap='16px';
+  const specs=[];
+  if(a.numeric.length){const c=(a.measure||a.numeric[0]).name;add('vz1',`Distribution · ${c}`);specs.push(['vz1',[{x:t.data[c].filter(v=>v!==null),type:'histogram',marker:{color:COB,opacity:.85}}],LAYOUT()]);}
+  if(a.breakdown){const b=a.breakdown;add('vz2',`${b.measure} by ${b.category}`);specs.push(['vz2',[{x:b.rows.map(r=>r.key),y:b.rows.map(r=>r.value),type:'bar',marker:{color:'#E67E4D'}}],LAYOUT({xaxis:{tickangle:-25,gridcolor:'rgba(255,255,255,.07)'}})]);}
+  if(a.trend){const tr=a.trend;add('vz3',`Trend · ${tr.measure} over time`,true);specs.push(['vz3',[{x:tr.keys,y:tr.series,type:'scatter',mode:'lines+markers',line:{color:COB,width:2.5},marker:{color:COB,size:5},fill:'tozeroy',fillcolor:'rgba(37,64,217,.08)'}],LAYOUT()]);}
+  if(a.numeric.length>=2){const names=a.numeric.map(c=>c.name);const z=names.map(r=>names.map(c=>{if(r===c)return 1;const p=pearson(t.data[r],t.data[c]);return p===null?0:+p.toFixed(2);}));add('vz4','Correlation matrix');specs.push(['vz4',[{z,x:names,y:names,type:'heatmap',zmin:-1,zmax:1,colorscale:[[0,'#F2605A'],[.5,'rgba(255,255,255,.08)'],[1,'#F2A968']],showscale:true,colorbar:{thickness:10,len:.85}}],LAYOUT({margin:{l:92,r:12,t:8,b:70},xaxis:{tickangle:-25}})]);}
+  const miss=t.columns.filter(c=>c.missingPct>0).sort((x,y)=>y.missingPct-x.missingPct);
+  if(miss.length){add('vz5','Missing data by column',a.numeric.length<2);specs.push(['vz5',[{x:miss.map(c=>c.missingPct),y:miss.map(c=>c.name),type:'bar',orientation:'h',marker:{color:'#F2C24B'}}],LAYOUT({margin:{l:120,r:16,t:8,b:40},xaxis:{ticksuffix:'%',gridcolor:'rgba(255,255,255,.07)'}})]);}
+  if(!specs.length){host.innerHTML='<div class="card pad" style="color:var(--tx-mut)">No chartable columns detected in this dataset.</div>';return;}
+  specs.forEach(([id,d,l])=>plot(id,d,l));
+}
+
+/* ---- ML view ---- */
+function renderML(){
+  const {ml}=LAST; const host=$('ml-content'); host.innerHTML='';
+  if(ml.mlConfidence!=null){
+    host.insertAdjacentHTML('beforeend',`<div class="tile" style="margin-bottom:18px;display:inline-block"><div class="k">Aggregate ML confidence</div><div class="v" style="color:${toneColor[ml.mlConfidence>=70?'good':ml.mlConfidence>=50?'ok':'warn']}">${ml.mlConfidence}<small> / 100</small></div><div class="foot">mean of clustering, forecast &amp; anomaly quality</div></div>`);
+  }
+  const specs=[];
+  // clustering
+  if(ml.cluster){
+    const c=ml.cluster; const pal=['#F2A968','#5FD6C6','#9B6FE0','#F2914B','#3FD99A','#C85B9C'];
+    const traces=[];
+    for(let k=0;k<c.k;k++){const pts=c.points.filter(p=>p.c===k);traces.push({x:pts.map(p=>p.x),y:pts.map(p=>p.y),mode:'markers',type:'scatter',name:'Cluster '+(k+1),marker:{color:pal[k%pal.length],size:6,opacity:.72}});}
+    host.insertAdjacentHTML('beforeend',mlPanel('cl','Customer / record segmentation','K-Means',
+      [['Clusters found',c.k],['Silhouette',c.silhouette],['Largest segment',Math.max(...c.sizes)+' rows']],
+      `Grouped ${c.points.length.toLocaleString()} records into <b>${c.k} segments</b> using ${c.cols.length} numeric features, projected to 2-D via PCA. A silhouette of <b>${c.silhouette}</b> indicates ${c.silhouette>0.5?'well-separated':c.silhouette>0.25?'moderately separated':'loosely separated'} clusters.`));
+    specs.push(['ml-cl-plot',traces,LAYOUT({showlegend:true,legend:{font:{size:10,color:'#A99DAA'}},margin:{l:48,r:12,t:8,b:40},xaxis:{title:'PC1',gridcolor:'rgba(255,255,255,.07)'},yaxis:{title:'PC2',gridcolor:'rgba(255,255,255,.07)'}})]);
+  }
+  // forecast
+  if(ml.forecast){
+    const f=ml.forecast;
+    const allK=[...f.keys,...f.futureKeys];
+    const t1={x:f.keys,y:f.actual,mode:'lines+markers',name:'Actual',line:{color:COB,width:2.5},marker:{size:5}};
+    const t2={x:f.keys,y:f.fit,mode:'lines',name:'Fitted',line:{color:'#9B6FE0',width:1.5,dash:'dot'}};
+    const bridge=[f.actual[f.actual.length-1],...f.forecast];
+    const t3={x:[f.keys[f.keys.length-1],...f.futureKeys],y:bridge,mode:'lines+markers',name:'Forecast',line:{color:'#3FD99A',width:2.5,dash:'dash'},marker:{size:6,symbol:'diamond'}};
+    host.insertAdjacentHTML('beforeend',mlPanel('fc',`Forecast · ${f.measure}`,'Least-squares',
+      [['R²',f.r2],['MAPE',(f.mape*100).toFixed(1)+'%'],['Next 3',f.forecast.map(v=>fmt(v)).join(' · ')]],
+      `Projected <b>${f.measure}</b> ${f.futureKeys.length} periods ahead from the monthly trend. In-sample error (MAPE) is <b>${(f.mape*100).toFixed(1)}%</b>${f.r2>0.5?`, and the trend explains ${Math.round(f.r2*100)}% of variance`:'; the series is close to flat, so the projection stays near the recent average'}.`));
+    specs.push(['ml-fc-plot',[t1,t2,t3],LAYOUT({showlegend:true,legend:{font:{size:10,color:'#A99DAA'},orientation:'h',y:1.12},margin:{l:56,r:12,t:20,b:40}})]);
+  }
+  // anomalies
+  if(ml.anomalies){
+    const an=ml.anomalies; const normal=an.points.filter(p=>!p.anomaly), bad=an.points.filter(p=>p.anomaly);
+    host.insertAdjacentHTML('beforeend',mlPanel('an',`Anomaly detection · ${an.col}`,'Robust z-score',
+      [['Anomalies',an.count],['Share',an.share+'%'],['Method','MAD · |z|>3.5']],
+      `Scanned <b>${an.col}</b> with the median-absolute-deviation z-score. Flagged <b>${an.count}</b> extreme value${an.count===1?'':'s'} (${an.share}% of rows)${an.share<2?' — the field is clean':an.share<8?' — a modest tail to review':' — a heavy tail worth investigating'}.`));
+    specs.push(['ml-an-plot',[
+      {x:normal.map(p=>p.i),y:normal.map(p=>p.v),mode:'markers',name:'Normal',type:'scatter',marker:{color:'#7A7183',size:5,opacity:.65}},
+      {x:bad.map(p=>p.i),y:bad.map(p=>p.v),mode:'markers',name:'Anomaly',type:'scatter',marker:{color:'#F2605A',size:9,symbol:'x'}}
+    ],LAYOUT({showlegend:true,legend:{font:{size:10,color:'#A99DAA'}},margin:{l:56,r:12,t:8,b:40},xaxis:{title:'Row index',gridcolor:'rgba(255,255,255,.07)'}})]);
+  }
+  if(!specs.length){host.innerHTML='<div class="card pad" style="color:var(--tx-mut)">This dataset doesn\u2019t have enough numeric structure for the ML pipeline (needs multiple numeric columns and/or a date column).</div>';return;}
+  specs.forEach(([id,d,l])=>plot(id,d,l));
+}
+function mlPanel(key,title,badge,metrics,takeaway){
+  return `<div class="ml-panel card pad reveal">
+    <div class="phead"><h3>${title}</h3><span class="badge">${badge}</span></div>
+    <div class="ml-body">
+      <div class="chart" style="box-shadow:none;border-color:var(--line-2)"><div class="plot" id="ml-${key}-plot" style="height:330px"></div></div>
+      <div class="ml-metrics">
+        ${metrics.map(m=>`<div class="ml-metric"><div class="k">${m[0]}</div><div class="v">${m[1]}</div></div>`).join('')}
+        <div class="takeaway">${takeaway}</div>
+      </div>
+    </div></div>`;
+}
+
+/* ---- governance ---- */
+function renderGovernance(){
+  const {g}=LAST;
+  animateGauge($('gov-gauge'),g.score,g.band.tone);
+  countUp($('gov-num'),g.score);
+  const bd=$('gov-band'); bd.textContent=g.band.label; bd.className='gband '+g.band.tone;
+  $('gov-verdict').textContent=g.verdict;
+  $('gov-parts').innerHTML=g.parts.map(p=>{const tone=p.value>=85?'good':p.value>=70?'ok':p.value>=50?'warn':'bad';
+    return `<div class="part"><div class="top"><span class="nm">${p.key} <span class="hint">· ${p.hint}</span></span><span class="val">${p.value}</span></div><div class="trk"><div class="f" data-w="${p.value}" style="background:${toneColor[tone]}"></div></div></div>`;}).join('');
+  requestAnimationFrame(()=>$('gov-parts').querySelectorAll('.f').forEach(el=>el.style.width=el.dataset.w+'%'));
+}
+
+/* ---- gauge (animated sweep) ---- */
+function gaugeSVG(score,tone){
+  const cx=120,cy=122,r=98,a0=Math.PI;
+  const pt=(ang)=>[cx+r*Math.cos(ang),cy-r*Math.sin(ang)];
+  const seg=(lo,hi,color,w)=>{const steps=Math.max(2,Math.round((hi-lo)/2));let d='';for(let i=0;i<=steps;i++){const v=lo+(hi-lo)*i/steps;const[a,b]=pt(a0-(v/100)*Math.PI);d+=(i?'L':'M')+a.toFixed(1)+' '+b.toFixed(1)+' ';}return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;};
+  const s=Math.max(0,Math.min(100,score));const[nx,ny]=pt(a0-(s/100)*Math.PI);const col=toneHex;
+  return `<svg viewBox="0 0 240 138" width="100%" height="100%">${seg(0,100,'rgba(255,255,255,.1)',13)}${seg(0,50,col.bad,13)}${seg(50,70,col.warn,13)}${seg(70,85,col.ok,13)}${seg(85,100,col.good,13)}<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="6.5" fill="#fff"/><circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="4.5" fill="${col[tone]}" stroke="#0A0812" stroke-width="1"/></svg>`;
+}
+function animateGauge(el,score,tone){
+  const dur=1000,t0=performance.now();
+  const tick=(now)=>{const p=Math.min(1,(now-t0)/dur);const e=1-Math.pow(1-p,3);el.innerHTML=gaugeSVG(score*e,tone);if(p<1)requestAnimationFrame(tick);};
+  requestAnimationFrame(tick);
+}
+
+/* ---- chat (streaming + optional LLM + memory) ---- */
+let CONV={}, thinking=false;
+const AI={on:false,provider:'openrouter',key:'',model:'openai/gpt-4o-mini'};
+
+function md(s){ // safe markdown-ish (our own text): bold, bullets, line breaks
+  const lines=s.split('\n'); let html='',inList=false;
+  for(let ln of lines){ ln=ln.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+    if(/^\s*•\s+/.test(ln)){ if(!inList){html+='<ul>';inList=true;} html+='<li>'+ln.replace(/^\s*•\s+/,'')+'</li>'; }
+    else { if(inList){html+='</ul>';inList=false;} html+=(html&&!html.endsWith('>')?'<br>':'')+ln; } }
+  if(inList)html+='</ul>'; return html;
+}
+function buildChatChips(){
+  const {a}=LAST; const m=(a.measure||a.numeric[0]), d=(a.dimension||a.categorical[0]); const qs=[];
+  if(m&&d)qs.push(`total ${m.name} by ${d.name}`);
+  if(a.trend)qs.push(`trend of ${a.trend.measure} over time`);
+  if(m)qs.push(`average ${m.name}`);
+  const cont=a.numeric.filter(c=>c.unique>2);
+  if(cont.length>=2)qs.push(`correlation between ${cont[0].name} and ${cont[1].name}`);
+  qs.push('which columns have missing values');
+  const chips=qs.slice(0,5);
+  $('chat-chips').innerHTML=chips.map((q,i)=>`<button class="chip-q" style="animation-delay:${i*60}ms">${q}</button>`).join('');
+  $('chat-chips').querySelectorAll('.chip-q').forEach(b=>b.onclick=()=>ask(b.textContent));
+}
+function resetChat(){
+  CONV={name:LAST.name}; $('chat-msgs').innerHTML='';
+  const d=addMsg('','bot'); const b=d.querySelector('.bubble');
+  streamText(b,`Hi! I've analyzed **${LAST.name}** — ${LAST.t.nRows.toLocaleString()} rows across ${LAST.t.columns.length} columns. Ask me anything, and I'll compute it straight from your data.`,()=>{});
+}
+function addMsg(html,who){const div=document.createElement('div');div.className='msg '+who;
+  div.innerHTML=(who==='bot'?'<div class="who">'+(AI.on?'Governor · AI':'Governor')+'</div>':'')+`<div class="bubble">${html}</div>`;
+  $('chat-msgs').appendChild(div);$('chat-msgs').scrollTop=$('chat-msgs').scrollHeight;return div;}
+const scrollChat=()=>{$('chat-msgs').scrollTop=$('chat-msgs').scrollHeight;};
+
+/* typewriter reveal of local text */
+function streamText(bubble,text,done){
+  const words=text.split(/(\s+)/); let i=0,acc='';
+  const tick=()=>{ if(i>=words.length){ bubble.innerHTML=md(acc); done&&done(); return; }
+    acc+=words[i++]; bubble.innerHTML=md(acc)+'<span class="caret"></span>'; scrollChat();
+    setTimeout(tick, 14+Math.random()*22); };
+  tick();
+}
+function attachChart(bubble,chart){
+  if(!chart)return; const pid='cp'+Math.random().toString(36).slice(2);
+  const c=document.createElement('div');c.className='mplot';c.id=pid;bubble.parentNode.appendChild(c);
+  setTimeout(()=>{renderChatChart(pid,chart);scrollChat();},40);
+}
+function attachFollowups(bubble,fus){
+  if(!fus||!fus.length)return; const row=document.createElement('div');row.className='fu-row';
+  row.innerHTML=fus.map((f,i)=>`<button class="fu" style="animation-delay:${i*80}ms">${f}</button>`).join('');
+  bubble.parentNode.appendChild(row);
+  row.querySelectorAll('.fu').forEach(b=>b.onclick=()=>ask(b.textContent)); scrollChat();
+}
+function renderChatChart(id,ch){
+  let data,layout=LAYOUT({margin:{l:50,r:14,t:28,b:40}});
+  layout.title={text:ch.title,font:{family:'Bricolage Grotesque',size:13,color:'#F4EEF1'},x:0.02,y:.98};
+  if(ch.type==='bar')data=[{x:ch.x,y:ch.y,type:'bar',orientation:ch.orientation||'v',marker:{color:ch.color||COB}}];
+  else if(ch.type==='line')data=[{x:ch.x,y:ch.y,mode:'lines+markers',line:{color:ch.color||COB,width:2.5},marker:{size:5},fill:'tozeroy',fillcolor:'rgba(37,64,217,.08)'}];
+  else if(ch.type==='hist')data=[{x:ch.x,type:'histogram',marker:{color:ch.color||COB,opacity:.85}}];
+  else if(ch.type==='scatter'){data=[{x:ch.x,y:ch.y,mode:'markers',type:'scatter',marker:{color:COB,size:6,opacity:.55}}];layout.xaxis.title=ch.xt;layout.yaxis.title=ch.yt;}
+  if(ch.suffix)layout.xaxis.ticksuffix=ch.suffix;
+  plot(id,data,layout);
+}
+
+/* optional LLM streaming (grounded in computed facts) */
+async function streamLLM(bubble,question,local){
+  const endpoint=AI.provider==='openai'?'https://api.openai.com/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
+  const schema=LAST.t.columns.map(c=>`${c.name} (${c.type})`).join(', ');
+  const sys="You are a sharp, concise data analyst inside an analytics app. Answer conversationally in 1-3 sentences. Use ONLY the provided facts and schema — never invent numbers. If facts are empty, reason qualitatively from the schema. Don't restate the question.";
+  const usr=`Question: ${question}\n\nComputed facts (ground truth, already correct):\n${JSON.stringify(local.facts)}\n\nDataset: ${LAST.name}, ${LAST.t.nRows} rows.\nColumns: ${schema}\n\nA precomputed answer you can paraphrase or improve on: "${local.text.replace(/\*\*/g,'')}"`;
+  const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AI.key,'HTTP-Referer':location.href,'X-Title':'Data Governance'},
+    body:JSON.stringify({model:AI.model,stream:true,temperature:0.3,messages:[{role:'system',content:sys},{role:'user',content:usr}]})});
+  if(!res.ok||!res.body){ const t=await res.text().catch(()=>''); throw new Error('HTTP '+res.status+(t?': '+t.slice(0,120):'')); }
+  const reader=res.body.getReader(),dec=new TextDecoder(); let acc='',buf='';
+  for(;;){ const {done,value}=await reader.read(); if(done)break; buf+=dec.decode(value,{stream:true});
+    const lines=buf.split('\n'); buf=lines.pop();
+    for(const line of lines){ const s=line.trim(); if(!s.startsWith('data:'))continue; const p=s.slice(5).trim();
+      if(p==='[DONE]')continue; try{ const j=JSON.parse(p); const d=j.choices?.[0]?.delta?.content; if(d){acc+=d;bubble.innerHTML=md(acc)+'<span class="caret"></span>';scrollChat();} }catch(e){} } }
+  bubble.innerHTML=md(acc||local.text); return acc;
+}
+
+function ask(q){
+  q=(q||'').trim(); if(thinking||!q)return; thinking=true;
+  addMsg(q.replace(/</g,'&lt;'),'user'); $('chat-input').value='';
+  const local=answerQuestion(q,LAST.t,LAST.a,CONV);
+  const holder=addMsg('<div class="typing"><span></span><span></span><span></span></div>','bot');
+  const bubble=holder.querySelector('.bubble');
+  const finishLocal=()=>{ streamText(bubble,local.text,()=>{ attachChart(bubble,local.chart); attachFollowups(bubble,local.followups); thinking=false; }); };
+  setTimeout(async()=>{
+    if(AI.on&&AI.key){
+      try{ await streamLLM(bubble,q,local); attachChart(bubble,local.chart); attachFollowups(bubble,local.followups); thinking=false; }
+      catch(e){ bubble.innerHTML='<span style="color:var(--tx-mut);font-size:12px">AI unavailable ('+e.message.slice(0,60)+') — answering locally.</span>'; setTimeout(finishLocal,300); }
+    } else finishLocal();
+  },360+Math.random()*220);
+}
+
+/* settings modal */
+function openSettings(){ $('set-provider').value=AI.provider;$('set-key').value=AI.key;$('set-model').value=AI.model;$('modal').classList.remove('hidden'); }
+function closeSettings(){ $('modal').classList.add('hidden'); }
+function saveSettings(){ AI.provider=$('set-provider').value;AI.key=$('set-key').value.trim();AI.model=$('set-model').value.trim()||'openai/gpt-4o-mini';
+  AI.on=!!AI.key; syncAI(); closeSettings();
+  if(AI.on){const d=addMsg('','bot');streamText(d.querySelector('.bubble'),`AI mode is on — I'll answer conversationally using **${AI.model}**, grounded in the numbers I compute.`,()=>{});} }
+function syncAI(){ $('ai-toggle').classList.toggle('on',AI.on); $('ai-badge').classList.toggle('hidden',!AI.on); }
+
+/* ---- report ---- */
+let REPORT_JSON='', REPORT_NAME='', REPORT_URL='', WORD_URL='';
+function buildReport(){
+  const {t,a,g,ml}=LAST;
+  const rep={dataset:LAST.name,generated:new Date().toISOString(),
+    transformation:{rows_in:t.nRawRows,rows_out:t.nRows,duplicates_removed:t.dupCount,operations:t.log},
+    schema:t.columns,insights:a.insights.map(i=>i.text),correlations:a.corr.slice(0,10),trend:a.trend,
+    ml:{clustering:ml.cluster&&{k:ml.cluster.k,silhouette:ml.cluster.silhouette,sizes:ml.cluster.sizes},
+        forecast:ml.forecast&&{measure:ml.forecast.measure,r2:ml.forecast.r2,mape:ml.forecast.mape,next:ml.forecast.forecast},
+        anomalies:ml.anomalies&&{column:ml.anomalies.col,count:ml.anomalies.count,share:ml.anomalies.share},
+        ml_confidence:ml.mlConfidence},
+    governance:{score:g.score,band:g.band.label,verdict:g.verdict,signals:g.parts}};
+  return JSON.stringify(rep,null,2);
+}
+const esc=(s)=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const bandHex={good:'#1F9D6B',ok:'#C9971F',warn:'#DE7C2E',bad:'#D2483F'};
+function buildPrintHTML(){
+  const {t,a,g,ml}=LAST; const bh=bandHex[g.band.tone];
+  const date=new Date().toLocaleString();
+  let h=`<div class="pr-head"><div class="brand">Data Governance · Analysis Report</div>
+    <h1>${esc(LAST.name)}</h1>
+    <div class="meta">Generated ${esc(date)} · ${t.nRows.toLocaleString()} rows · ${t.columns.length} columns</div></div>`;
+  h+=`<div class="pr-score"><div class="big" style="color:${bh}">${g.score}<span style="font-size:18px;color:#999">/100</span></div>
+    <div><span class="band" style="background:${bh}22;color:${bh}">${esc(g.band.label)}</span>
+    <div class="verdict">${esc(g.verdict)}</div></div></div>`;
+
+  h+=`<h2>Confidence signals</h2><div class="pr-grid">`+
+    g.parts.map(p=>`<div class="row"><span class="k">${esc(p.key)}</span><span class="v">${p.value}</span></div>`).join('')+`</div>`;
+
+  h+=`<h2>Transformation</h2><div class="pr-grid">
+    <div class="row"><span class="k">Rows in → out</span><span class="v">${t.nRawRows.toLocaleString()} → ${t.nRows.toLocaleString()}</span></div>
+    <div class="row"><span class="k">Duplicates removed</span><span class="v">${t.dupCount}</span></div>
+    <div class="row"><span class="k">Operations applied</span><span class="v">${t.log.length}</span></div>
+    <div class="row"><span class="k">Fields typed</span><span class="v">${t.columns.filter(c=>c.type!=='text'&&c.type!=='empty').length} / ${t.columns.length}</span></div></div>`;
+  if(t.log.length) h+=`<ul>`+t.log.slice(0,12).map(o=>`<li><b>${esc(o.op)}</b> — ${esc(o.detail)}</li>`).join('')+`</ul>`;
+
+  h+=`<h2>Key insights</h2><ul>`+a.insights.slice(0,7).map(i=>`<li>${esc(i.text)}</li>`).join('')+`</ul>`;
+
+  if(ml.cluster||ml.forecast||ml.anomalies){
+    h+=`<h2>ML pipeline</h2><div class="pr-grid">`;
+    if(ml.cluster) h+=`<div class="row"><span class="k">Clusters (silhouette)</span><span class="v">${ml.cluster.k} (${ml.cluster.silhouette})</span></div>`;
+    if(ml.forecast) h+=`<div class="row"><span class="k">Forecast ${esc(ml.forecast.measure)} · R²</span><span class="v">${ml.forecast.r2}</span></div>`;
+    if(ml.anomalies) h+=`<div class="row"><span class="k">Anomalies in ${esc(ml.anomalies.col)}</span><span class="v">${ml.anomalies.count} (${ml.anomalies.share}%)</span></div>`;
+    if(ml.mlConfidence!=null) h+=`<div class="row"><span class="k">Aggregate ML confidence</span><span class="v">${ml.mlConfidence}</span></div>`;
+    h+=`</div>`;
+  }
+
+  h+=`<h2>Column schema</h2><table><thead><tr><th>Column</th><th>Type</th><th>Unique</th><th>Missing</th><th>Validity</th></tr></thead><tbody>`+
+    t.columns.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.type}</td><td>${c.unique.toLocaleString()}</td><td>${c.missingPct}%</td><td>${Math.round((c.validity??1)*100)}%</td></tr>`).join('')+`</tbody></table>`;
+
+  h+=`<div class="pr-foot">Produced by the Data Governance console · confidence = weighted mean of seven data-reliability signals, capped for small samples.</div>`;
+  return h;
+}
+function downloadReport(){
+  if(!LAST)return;
+  REPORT_JSON=buildReport(); REPORT_NAME=LAST.name.replace(/\.csv$/i,'')+'_governance_report';
+  // JSON anchor
+  if(REPORT_URL){try{URL.revokeObjectURL(REPORT_URL);}catch(e){}}
+  let jhref; try{ REPORT_URL=URL.createObjectURL(new Blob([REPORT_JSON],{type:'application/json'})); jhref=REPORT_URL; }
+  catch(e){ jhref='data:application/json;charset=utf-8,'+encodeURIComponent(REPORT_JSON); }
+  const ja=$('report-download'); ja.href=jhref; ja.setAttribute('download',REPORT_NAME+'.json');
+  // Word anchor (HTML-based .doc that Word opens)
+  const docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;color:#111}h1{font-size:22pt}h2{font-size:14pt;border-bottom:1px solid #ccc;margin-top:18pt}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 8px;font-size:9pt;text-align:left}.brand{color:#C0562F;font-weight:bold;letter-spacing:2px}</style></head><body>'+buildPrintHTML().replace(/class="[^"]*"/g,'')+'</body></html>';
+  if(WORD_URL){try{URL.revokeObjectURL(WORD_URL);}catch(e){}}
+  let whref; try{ WORD_URL=URL.createObjectURL(new Blob(['\ufeff'+docHtml],{type:'application/msword'})); whref=WORD_URL; }
+  catch(e){ whref='data:application/msword;charset=utf-8,'+encodeURIComponent(docHtml); }
+  const wa=$('report-word'); wa.href=whref; wa.setAttribute('download',REPORT_NAME+'.doc');
+  // JSON preview
+  $('report-text').value=REPORT_JSON;
+  $('report-hint').innerHTML='<b>Save as PDF</b> opens your print dialog — choose “Save as PDF” as the destination. If the .json / .doc buttons don\u2019t start a download, you\u2019re in an embedded preview: open this app in its own browser tab, or use <b>Copy JSON</b>.';
+  $('report-modal').classList.remove('hidden');
+}
+function exportPDF(){
+  if(!LAST)return;
+  $('print-report').innerHTML=buildPrintHTML();
+  $('report-modal').classList.add('hidden');
+  setTimeout(()=>{ try{ window.print(); }catch(e){ alert('Use your browser menu → Print → Save as PDF (Ctrl/Cmd+P).'); } },120);
+}
+async function copyReport(){
+  const ta=$('report-text'); ta.focus(); ta.select(); try{ta.setSelectionRange(0,ta.value.length);}catch(e){}
+  let ok=false;
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText){ await navigator.clipboard.writeText(REPORT_JSON); ok=true; } }catch(e){}
+  if(!ok){ try{ ok=document.execCommand('copy'); }catch(e){} }
+  $('report-hint').innerHTML = ok ? '<b>Copied ✓</b>  Paste into a text editor and save as .json.' : 'Text above is selected — press <b>Ctrl/Cmd + C</b> to copy.';
+}
+function reset(){LAST=null;RENDERED={};$('app').classList.add('hidden');$('landing').classList.remove('hidden','leaving');window.scrollTo(0,0);}
+
+/* ---- wiring ---- */
+buildNav();
+/* fail-safe: if entrance animations don't run (reduced-motion, odd browsers),
+   force the landing content visible so the upload is always reachable. */
+function revealLanding(){
+  document.querySelectorAll('.upload-card,.eyebrow-l,.lede,.landing-note,.hero-top,.cta-row,.hero-h1 .w,.orb-stage,.landing-drop,.mega-word,.scroll-cue,.hero-copy').forEach(el=>{el.style.opacity='1';el.style.transform='none';});
+}
+setTimeout(revealLanding,1800);
+// also reveal immediately if the browser reports reduced motion
+try{ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) revealLanding(); }catch(e){}
+$('pick').onclick=(e)=>{e.stopPropagation();$('file').click();};
+$('dz').onclick=(e)=>{ if(e.target.id==='pick'||e.target.id==='sample')return; $('file').click(); };
+$('file').onchange=(e)=>readFile(e.target.files[0]);
+$('sample').onclick=(e)=>{e.stopPropagation();loadSample();};
+;['dragenter','dragover'].forEach(ev=>$('landing').addEventListener(ev,(e)=>{e.preventDefault();$('dz').classList.add('hover');}));
+;['dragleave','drop'].forEach(ev=>$('landing').addEventListener(ev,(e)=>{e.preventDefault();$('dz').classList.remove('hover');}));
+$('landing').addEventListener('drop',(e)=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(f)readFile(f);});
+$('btn-new').onclick=reset; $('btn-report').onclick=downloadReport;
+$('report-close').onclick=()=>$('report-modal').classList.add('hidden');
+$('report-copy').onclick=copyReport;
+$('report-pdf').onclick=exportPDF;
+$('report-modal').addEventListener('click',(e)=>{if(e.target.id==='report-modal')$('report-modal').classList.add('hidden');});
+$('chat-send').onclick=()=>ask($('chat-input').value);
+$('chat-input').addEventListener('keydown',(e)=>{if(e.key==='Enter')ask($('chat-input').value);});
+$('burger').onclick=()=>$('sidebar').classList.toggle('open');
+$('ai-toggle').onclick=()=>{ if(!AI.key){ openSettings(); } else { AI.on=!AI.on; syncAI(); } };
+$('ai-settings').onclick=openSettings;
+$('set-cancel').onclick=closeSettings;
+$('set-save').onclick=saveSettings;
+$('modal').addEventListener('click',(e)=>{if(e.target.id==='modal')closeSettings();});
+$('set-provider').onchange=()=>{ $('set-model').placeholder = $('set-provider').value==='openai'?'gpt-4o-mini':'openai/gpt-4o-mini'; };
+
+/* ============================================================================
+   Claude Opus Review Dashboard — independent AI review of Sonnet's existing
+   analysis. Opus does NOT re-analyse; it inspects Sonnet's outputs and the
+   deterministic engine adjudicates. Produces an AI Review Report, a Review
+   Score Card, and a combined Final Data Governance Score.
+   Depends on app scope: stats, pearson, answerQuestion, fmt, cgInterpret,
+   cgJsTruth, callModelRaw.
+   ========================================================================== */
+
+/* Collect Sonnet's already-produced analysis (from the existing dashboard) */
+function collectSonnetWork(name, t, a, g, ml){
+  const numeric=a.numeric, cats=a.categorical;
+  const datasetSummary=`${name}: ${t.nRows.toLocaleString()} rows × ${t.columns.length} columns (${numeric.length} numeric, ${cats.length} categorical, ${a.datetime.length} date). ${t.dupCount} duplicate rows removed; ${t.log.length} cleaning operations applied.`;
+  const statistics=numeric.slice(0,8).map((c)=>{ const s=stats(t.data[c.name]); return { column:c.name, min:s?+s.min.toFixed(2):null, max:s?+s.max.toFixed(2):null, mean:s?+s.mean.toFixed(2):null, median:s?+s.median.toFixed(2):null }; });
+  const sql = a.measure && a.dimension ? `SELECT "${a.dimension.name}", SUM("${a.measure.name}") AS total FROM dataset GROUP BY "${a.dimension.name}" ORDER BY total DESC;` : `SELECT COUNT(*) FROM dataset;`;
+  const insights=(a.insights||[]).map((i)=>i.text);
+  const charts=[]; if(a.trend)charts.push('trend line of '+a.trend.measure); if(a.dimension&&a.measure)charts.push(a.measure.name+' by '+a.dimension.name+' (bar)'); if(numeric.length>=2)charts.push('correlation heatmap'); if(cats[0])charts.push(cats[0].name+' distribution');
+  const corr=(a.corr||[]).slice(0,5).map((c)=>({ a:c.a, b:c.b, r:c.r }));
+  const execSummary=`The dataset was cleaned and profiled with a Data Governance confidence of ${g.score}/100 (${g.band.label}). `+(a.insights[0]?a.insights[0].text+' ':'')+(a.trend?`${a.trend.measure} is trending ${a.trend.direction} (${a.trend.pctChange>0?'+':''}${a.trend.pctChange}%). `:'')+(a.corr[0]?`Strongest correlation: ${a.corr[0].a}↔${a.corr[0].b} (r=${a.corr[0].r}).`:'');
+  const mlSummary = ml ? [ ml.cluster?`clustering k=${ml.cluster.k} (silhouette ${ml.cluster.silhouette})`:'', ml.forecast?`forecast R²=${ml.forecast.r2}`:'', ml.anomalies?`${ml.anomalies.count} anomalies`:'' ].filter(Boolean).join('; ') : '';
+  return { datasetSummary, statistics, sql, insights, charts, correlations:corr, execSummary, mlSummary, governanceScore:g.score, governanceBand:g.band.label };
+}
+
+/* Deterministic re-verification of Sonnet's numeric claims (source of truth) */
+function verifySonnetClaims(work, t, a){
+  const checks=[];
+  // verify each reported statistic against a fresh computation
+  for(const st of work.statistics){
+    const s=stats(t.data[st.column]); if(!s)continue;
+    const cmp=(claim,truth)=>({ claim, truth:+truth.toFixed(2), ok: claim==null?null : Math.abs(claim-truth)/(Math.abs(truth)+1e-9) < 0.01 });
+    checks.push({ label:`mean(${st.column})`, ...cmp(st.mean, s.mean) });
+    checks.push({ label:`max(${st.column})`, ...cmp(st.max, s.max) });
+  }
+  // verify correlations
+  for(const c of work.correlations){ const r=pearson(t.data[c.a],t.data[c.b]); if(r==null)continue; checks.push({ label:`corr(${c.a},${c.b})`, claim:c.r, truth:+r.toFixed(3), ok:Math.abs(c.r-r)<0.02 }); }
+  const verifiable=checks.filter((c)=>c.ok!=null);
+  const correct=verifiable.filter((c)=>c.ok);
+  const accuracy = verifiable.length ? Math.round(100*correct.length/verifiable.length) : null;
+  return { checks, accuracy, verifiableCount:verifiable.length, correctCount:correct.length };
+}
+
+/* Ask Opus to independently REVIEW (not re-analyse) Sonnet's work */
+function opusReviewPrompt(work){
+  const sys='You are Claude Opus acting as an INDEPENDENT AI REVIEWER. You are given the complete outputs of another analyst (Claude Sonnet). Do NOT perform a new analysis. INSPECT Sonnet\u2019s existing results and judge them. Assess: which calculations look correct/incorrect, whether the SQL is valid, which insights are supported vs unsupported, any hallucinations, and any missing business insights. Output ONE JSON object on the final line: {"summary":"<2-3 sentences>","strengths":["..."],"weaknesses":["..."],"validation_comments":["..."],"suggested_corrections":["..."],"missing_insights":["..."],"hallucinations":["..."],"accuracy":0-100,"sql_quality":0-100,"insight_quality":0-100,"evidence_quality":0-100,"hallucination_risk":"Low|Medium|High","trust_rating":0-100,"review_confidence":0-100,"decision":"PASS|WARNING|FAIL"}.';
+  const usr=`SONNET'S ANALYSIS TO REVIEW:\n\nDataset Summary: ${work.datasetSummary}\n\nStatistics: ${JSON.stringify(work.statistics)}\n\nSQL: ${work.sql}\n\nInsights:\n- ${work.insights.join('\n- ')}\n\nCorrelations: ${JSON.stringify(work.correlations)}\n\nCharts: ${work.charts.join('; ')}\n\nExecutive Summary: ${work.execSummary}\n\nML: ${work.mlSummary||'n/a'}\n\nSonnet's Data Governance Score: ${work.governanceScore}/100 (${work.governanceBand}).\n\nReview this work now.`;
+  return { sys, usr };
+}
+function parseReview(raw){
+  const out={ ok:false, summary:'', strengths:[], weaknesses:[], validation_comments:[], suggested_corrections:[], missing_insights:[], hallucinations:[], accuracy:null, sql_quality:null, insight_quality:null, evidence_quality:null, hallucination_risk:null, trust_rating:null, review_confidence:null, decision:null, raw };
+  if(!raw) return out;
+  const m=raw.match(/\{[\s\S]*\}\s*$/)||raw.match(/\{[\s\S]*\}/);
+  if(m){ try{ const j=JSON.parse(m[0]); Object.assign(out,{ ok:true, summary:j.summary||'', strengths:j.strengths||[], weaknesses:j.weaknesses||[], validation_comments:j.validation_comments||[], suggested_corrections:j.suggested_corrections||[], missing_insights:j.missing_insights||[], hallucinations:j.hallucinations||[], accuracy:num(j.accuracy), sql_quality:num(j.sql_quality), insight_quality:num(j.insight_quality), evidence_quality:num(j.evidence_quality), hallucination_risk:j.hallucination_risk||null, trust_rating:num(j.trust_rating), review_confidence:num(j.review_confidence), decision:(j.decision||'').toUpperCase() }); return out; }catch(e){} }
+  out.summary=raw.slice(0,300); out.ok=true; out.decision='WARNING'; return out;
+  function num(x){ return x==null?null:Math.max(0,Math.min(100,+x)); }
+}
+
+/* classify a fetch failure into an actionable reason */
+function classifyReviewError(e){
+  const s=String(e||'');
+  if(/402|more credits|requires more|insufficient|balance|payment required/i.test(s)) return 'your OpenRouter account is out of credits — add a small top-up at openrouter.ai (Settings → Credits) and the AI review will run';
+  if(/Failed to fetch|NetworkError|Load failed|ERR_|CORS|blocked/i.test(s)) return 'the request was blocked — you are likely in an embedded preview, offline, or behind a firewall/ad-blocker';
+  if(/401|403|invalid.*key|unauthor|no auth/i.test(s)) return 'the API key was rejected (check the key and that it has credit)';
+  if(/404|not found|no endpoints|no allowed/i.test(s)) return 'the model ID was not found on your account';
+  if(/429|rate/i.test(s)) return 'the provider rate-limited the request';
+  return s.slice(0,90);
+}
+/* build a real review from deterministic verification alone (no network needed) */
+function synthDeterministicReview(work, verify, reason){
+  const failed=verify.checks.filter((c)=>c.ok===false), passed=verify.checks.filter((c)=>c.ok===true);
+  const acc=verify.accuracy;
+  const strengths=[], weaknesses=[], corrections=[], validation=[], halluc=[];
+  if(passed.length) strengths.push(`${passed.length} of ${verify.verifiableCount} re-verified calculations match the source data exactly.`);
+  if(work.governanceScore>=70) strengths.push(`Data Governance confidence is ${work.governanceScore}/100 (${work.governanceBand}).`);
+  strengths.push('Dataset was cleaned, typed and de-duplicated before analysis.');
+  for(const c of failed){ weaknesses.push(`${c.label}: reported ${fmt(c.claim)} but recomputes to ${fmt(c.truth)}.`); corrections.push(`Correct ${c.label} to ${fmt(c.truth)}.`); if(Math.abs(c.claim-c.truth)/(Math.abs(c.truth)+1e-9)>0.2) halluc.push(`${c.label} is far from the true value — possible fabricated figure.`); }
+  validation.push(`${passed.length}/${verify.verifiableCount} numeric claims were independently recomputed and confirmed.`);
+  if(!verify.verifiableCount) validation.push('No numeric claims were independently re-verifiable for this dataset.');
+  const decision = acc==null?'WARNING':acc>=90?'PASS':acc>=70?'WARNING':'FAIL';
+  return { ok:true, source:'deterministic', unreachableReason:reason,
+    summary:`Claude Opus could not be reached (${reason}). This is a deterministic review computed locally instead: the engine re-verified Sonnet\u2019s calculations against the real dataset${acc!=null?`, and ${acc}% of the re-checkable figures are correct`:''}.`,
+    strengths, weaknesses, validation_comments:validation, suggested_corrections:corrections,
+    missing_insights:['A full business-insight and hallucination review needs the Opus reviewer, which was unreachable — connect from a real browser tab with a valid key to enable it.'],
+    hallucinations:halluc, accuracy:acc, sql_quality:null, insight_quality:null,
+    evidence_quality: verify.verifiableCount?Math.round(100*passed.length/Math.max(1,verify.verifiableCount)):null,
+    hallucination_risk: halluc.length?(halluc.length>1?'High':'Medium'):'Low', trust_rating:acc, review_confidence: verify.verifiableCount?80:40, decision };
+}
+
+/* Review Score Card — blends Opus ratings with deterministic verification */
+function buildReviewScoreCard(review, verify){
+  const clamp=(x)=>x==null?null:Math.max(0,Math.min(100,x));
+  // deterministic accuracy overrides/【anchors】 the model's self-rating when available
+  const accuracy = verify.accuracy!=null ? verify.accuracy : clamp(review.accuracy);
+  const sqlQuality = clamp(review.sql_quality!=null?review.sql_quality:90);
+  const insightQuality = clamp(review.insight_quality);
+  const evidenceQuality = clamp(review.evidence_quality);
+  const hallRisk = review.hallucination_risk || (review.hallucinations&&review.hallucinations.length? (review.hallucinations.length>2?'High':'Medium') : 'Low');
+  const hallPenalty = hallRisk==='High'?25:hallRisk==='Medium'?10:0;
+  const comps=[
+    { key:'Accuracy', value:accuracy, weight:35, source: verify.accuracy!=null?`deterministic (${verify.correctCount}/${verify.verifiableCount} checks passed)`:'Opus rating' },
+    { key:'SQL Quality', value:sqlQuality, weight:20, source:'Opus review' },
+    { key:'Insight Quality', value:insightQuality, weight:20, source:'Opus review' },
+    { key:'Evidence Quality', value:evidenceQuality, weight:25, source:'Opus review' },
+  ];
+  const app=comps.filter((c)=>c.value!=null); const wsum=app.reduce((s,c)=>s+c.weight,0)||1;
+  comps.forEach((c)=>{ c.effectiveWeight=(c.value!=null)?+(100*c.weight/wsum).toFixed(1):0; });
+  let trust=+app.reduce((s,c)=>s+c.value*(c.weight/wsum),0).toFixed(1);
+  trust=Math.max(0,+(trust-hallPenalty).toFixed(1));
+  return { accuracy, sqlQuality, insightQuality, evidenceQuality, hallRisk, hallPenalty, trustScore:trust, components:comps };
+}
+
+/* combine Sonnet governance + Opus trust into the Final Data Governance Score */
+function combineFinal(sonnetScore, opusTrust, decision){
+  // Opus review gates the final score: a FAIL caps it hard, WARNING dampens it.
+  const blended = +(0.5*sonnetScore + 0.5*opusTrust).toFixed(1);
+  let final = blended;
+  if(decision==='FAIL') final=Math.min(final, 45);
+  else if(decision==='WARNING') final=Math.min(final, 72);
+  final=+final.toFixed(1);
+  const band = final>=85?{label:'Trusted',tone:'good'}:final>=70?{label:'Acceptable',tone:'ok'}:final>=50?{label:'Guarded',tone:'warn'}:{label:'Untrusted',tone:'bad'};
+  const finalDecision = decision==='FAIL'||final<50?'FAIL':decision==='WARNING'||final<70?'WARNING':'PASS';
+  return { sonnetScore, opusTrust, blended, final, band, finalDecision };
+}
+
+/* orchestration the UI calls */
+async function runOpusReview(name, t, a, g, ml, cfg, onProgress){
+  const stages=[]; const mark=(l)=>{ stages.push({label:l,t:Date.now()}); onProgress&&onProgress(stages); };
+  mark('Collecting Sonnet\u2019s completed analysis');
+  const work=collectSonnetWork(name, t, a, g, ml);
+  mark('Deterministic re-verification of Sonnet\u2019s numbers');
+  const verify=verifySonnetClaims(work, t, a);
+  mark('Sending Sonnet\u2019s work to Claude Opus for independent review');
+  const { sys, usr }=opusReviewPrompt(work);
+  const raw=await callModelRaw(cfg.opusModel, 'openrouter', cfg.apiKey, sys, usr);
+  let review;
+  if(raw.error){ // Opus unreachable → real deterministic review instead of failing
+    review=synthDeterministicReview(work, verify, classifyReviewError(raw.error)); review.error=raw.error;
+  } else {
+    review=parseReview(raw.text);
+    if(!review.ok){ review=synthDeterministicReview(work, verify, 'Opus responded but the output could not be parsed'); }
+    else review.source='opus';
+  }
+  review.latency=raw.latencyMs; review.usage={prompt_tokens:raw.tokensIn||0,completion_tokens:raw.tokensOut||0};
+  mark('Building Review Score Card');
+  const scoreCard=buildReviewScoreCard(review, verify);
+  // if deterministic verification strongly disagrees, force decision down
+  let decision=review.decision||'WARNING';
+  if(verify.accuracy!=null && verify.accuracy<60) decision='FAIL';
+  else if(verify.accuracy!=null && verify.accuracy<90 && decision==='PASS') decision='WARNING';
+  mark('Combining Sonnet + Opus into Final Data Governance Score');
+  const final=combineFinal(g.score, scoreCard.trustScore, decision);
+  return { work, verify, review:Object.assign(review,{decision}), scoreCard, final, timeline:stages };
+}
+
+
+/* self-contained model caller (so review.js needs no other AI module) */
+async function callModelRaw(model, provider, key, sys, usr){
+  const endpoint = provider==='openai'?'https://api.openai.com/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
+  const now=()=>(typeof performance!=='undefined'?performance.now():Date.now()); const t0=now();
+  try{
+    const res=await fetch(endpoint,{ method:'POST', headers:{ 'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':location.href,'X-Title':'Claude Opus Review Dashboard' }, body:JSON.stringify({ model, temperature:0.15, max_tokens:900, messages:[{role:'system',content:sys},{role:'user',content:usr}] }) });
+    const latencyMs=Math.round(now()-t0);
+    if(!res.ok){ const tx=await res.text().catch(()=> ''); return { error:'HTTP '+res.status+' '+tx.slice(0,120), latencyMs }; }
+    const j=await res.json(); const text=j.choices&&j.choices[0]&&j.choices[0].message?j.choices[0].message.content:''; const usage=j.usage||{};
+    return { text, latencyMs, tokensIn:usage.prompt_tokens||0, tokensOut:usage.completion_tokens||0 };
+  }catch(e){ return { error:String(e.message||e), latencyMs:Math.round(now()-t0) }; }
+}
+
+
+
+/* ---- Claude Opus Review Dashboard ---- */
+function rvEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function rvList(id, arr, emptyMsg){ const el=$(id); if(!arr||!arr.length){ el.innerHTML='<li class="empty">'+(emptyMsg||'None noted.')+'</li>'; return; } el.innerHTML=arr.map(x=>'<li>'+rvEsc(x)+'</li>').join(''); }
+function mountReviewView(){ if(!LAST) return; $('rv-dataset').textContent=LAST.name+' · '+LAST.t.nRows.toLocaleString()+' rows'; $('rv-sonnet-score').textContent=LAST.g.score+' / 100 ('+LAST.g.band.label+')'; if(!$('rv-key').value && AI.key) $('rv-key').value=AI.key; }
+async function runReview(){
+  if(!LAST) return;
+  const apiKey=$('rv-key').value.trim(); const opusModel=$('rv-opus-model').value.trim()||'anthropic/claude-opus-4.8';
+  $('rv-err').innerHTML='';
+  if(!apiKey){ $('rv-err').innerHTML='<div class="err">An OpenRouter API key is required so Claude Opus can review Sonnet\u2019s analysis. It is used only for direct calls from this page to OpenRouter.</div>'; return; }
+  $('rv-run').disabled=true; $('rv-run').textContent='Reviewing…'; $('rv-results').classList.add('hidden'); $('rv-progress').classList.remove('hidden'); $('rv-timeline').innerHTML='';
+  const t0=Date.now();
+  const onProg=(stages)=>{ $('rv-timeline').innerHTML=stages.map(s=>`<div class="tl-item"><b>${rvEsc(s.label)}</b><span class="dt">+${s.t-t0}ms</span></div>`).join(''); };
+  let result;
+  try{ result=await runOpusReview(LAST.name, LAST.t, LAST.a, LAST.g, LAST.ml, { opusModel, apiKey }, onProg); }
+  catch(e){ $('rv-progress').classList.add('hidden'); $('rv-err').innerHTML='<div class="err">Review failed: '+rvEsc(e.message)+'. OpenRouter calls must run from a real browser tab (not an embedded preview).</div>'; $('rv-run').disabled=false; $('rv-run').textContent='Run Opus review'; return; }
+  $('rv-progress').classList.add('hidden'); $('rv-run').disabled=false; $('rv-run').textContent='Run Opus review';
+  renderReview(result);
+}
+function renderReview(r){
+  $('rv-results').classList.remove('hidden');
+  const f=r.final, sc=r.scoreCard, rev=r.review;
+  animateGauge($('rv-gauge'), f.final, f.band.tone);
+  countUp($('rv-final-num'), f.final); $('rv-final-num').style.color=toneColor[f.band.tone];
+  const bd=$('rv-final-band'); bd.textContent=f.band.label; bd.className='gband '+f.band.tone;
+  $('rv-s-sonnet').textContent=f.sonnetScore; $('rv-s-opus').textContent=f.opusTrust; $('rv-s-final').textContent=f.final;
+  const dec=$('rv-decision'); dec.textContent='Final decision: '+f.finalDecision; dec.className='rv-decision '+f.finalDecision;
+
+  // score card
+  const risk=sc.hallRisk;
+  $('rv-scorecard').innerHTML=[
+    ['Accuracy', sc.accuracy!=null?sc.accuracy+'%':'—', toneColor[sc.accuracy>=90?'good':sc.accuracy>=70?'ok':'bad'], r.verify.accuracy!=null?'deterministic':'Opus'],
+    ['SQL Quality', sc.sqlQuality!=null?sc.sqlQuality+'%':'—', toneColor[sc.sqlQuality>=90?'good':'ok'], 'Opus review'],
+    ['Insight Quality', sc.insightQuality!=null?sc.insightQuality+'%':'—', toneColor[sc.insightQuality>=90?'good':sc.insightQuality>=70?'ok':'warn'], 'Opus review'],
+    ['Evidence Quality', sc.evidenceQuality!=null?sc.evidenceQuality+'%':'—', toneColor[sc.evidenceQuality>=90?'good':'ok'], 'Opus review'],
+    ['Hallucination Risk', risk, toneColor[risk==='Low'?'good':risk==='Medium'?'warn':'bad'], risk==='Low'?'none detected':'flagged'],
+    ['Trust Score', sc.trustScore+'%', toneColor[f.band.tone], 'blended'],
+  ].map(([k,v,c,src])=>`<div class="rv-metric"><div class="v" style="color:${c}">${rvEsc(v)}</div><div class="k">${rvEsc(k)}</div><div class="src">${rvEsc(src)}</div></div>`).join('');
+
+  // mode banner (deterministic fallback vs full Opus review)
+  if(rev.source==='deterministic'){
+    $('rv-err').innerHTML='<div class="ins warn" style="margin-top:0"><span class="tag">LOCAL REVIEW</span><p>Claude Opus was unreachable, so the scores below come from the app\u2019s own deterministic re-verification of Sonnet\u2019s numbers — they are real, just without Opus\u2019s narrative judgement. To enable the full AI review, open this file in a real browser tab (not the embedded preview) with internet and a valid OpenRouter key, then Run again.</p></div>';
+  } else { $('rv-err').innerHTML=''; }
+  // report
+  $('rv-summary').textContent = rev.summary || 'Review completed.';
+  rvList('rv-strengths', rev.strengths, 'None noted.');
+  rvList('rv-weaknesses', rev.weaknesses, 'None noted.');
+  rvList('rv-validation', rev.validation_comments, 'No validation comments.');
+  rvList('rv-corrections', rev.suggested_corrections, 'No corrections suggested.');
+  rvList('rv-missing', rev.missing_insights, 'No missing insights flagged.');
+  rvList('rv-hallucinations', rev.hallucinations, 'No hallucinations detected.');
+
+  // evidence
+  $('rv-evidence').innerHTML = r.verify.checks.length ? r.verify.checks.map(c=>{
+    const ok=c.ok==null?'—':c.ok?'<span class="ok">✓ match</span>':'<span class="no">✗ off</span>';
+    return `<div class="rv-ev"><span class="lbl">${rvEsc(c.label)}</span><div class="rz"><span>Sonnet: <b>${fmt(c.claim)}</b></span><span>Verified: <b>${fmt(c.truth)}</b></span>${ok}</div></div>`;
+  }).join('') : '<div class="rv-ev"><span class="lbl">No numeric claims were re-verifiable for this dataset.</span></div>';
+}
+$('rv-run').onclick=runReview;
+async function testReviewConnection(){
+  const key=$('rv-key').value.trim(); const model=$('rv-opus-model').value.trim()||'anthropic/claude-opus-4.8';
+  $('rv-err').innerHTML='<div class="ins stat"><span class="tag">TESTING</span><p>Pinging OpenRouter…</p></div>';
+  if(!key){ $('rv-err').innerHTML='<div class="err">Enter your OpenRouter API key first.</div>'; return; }
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':location.href,'X-Title':'Data Governance'},body:JSON.stringify({model,max_tokens:1,messages:[{role:'user',content:'ping'}]})});
+    if(res.ok){ $('rv-err').innerHTML='<div class="ins" style="border-color:rgba(63,217,154,.4)"><span class="tag" style="background:rgba(63,217,154,.15);color:#7ee7b8">CONNECTED</span><p>OpenRouter reachable and the key works with <b>'+model+'</b>. You can Run the review.</p></div>'; return; }
+    const tx=await res.text().catch(()=> ''); const reason = res.status===402||/more credits|insufficient|balance/i.test(tx)?'your OpenRouter account is out of credits — add a small top-up at openrouter.ai → Settings → Credits, then retry' : res.status===401||res.status===403?'the key was rejected — check it has credit and access to '+model : res.status===404?'the model ID "'+model+'" was not found on your account' : res.status===429?'rate-limited — wait and retry' : 'HTTP '+res.status;
+    $('rv-err').innerHTML='<div class="err">Reachable, but the request failed: '+reason+'. '+(tx?('<br><small>'+tx.slice(0,140)+'</small>'):'')+'</div>';
+  }catch(e){
+    $('rv-err').innerHTML='<div class="err">Could not reach OpenRouter (<b>'+String(e.message||e)+'</b>). This almost always means you\u2019re in the embedded preview (which blocks network calls), offline, or behind a firewall/ad-blocker. Save the file and open it in a real browser tab, then test again.</div>';
+  }
+}
+$('rv-test').onclick=testReviewConnection;
+
+/* ---- dual-console integration (used when embedded as a Sonnet/Opus pane) ---- */
+(function(){
+  const M=window.__GOV_MODEL__, L=window.__GOV_LABEL__;
+  if(M){ AI.provider='openrouter'; AI.model=M; }
+  if(L){
+    const s=document.querySelector('.sb-brand .s'); if(s) s.textContent=L;
+    const hb=document.querySelector('.hero-brand'); if(hb) hb.innerHTML='<span class="dotmk"></span> '+L.toUpperCase();
+  }
+  window.addEventListener('message',(e)=>{
+    const d=e.data||{}; if(d.type!=='gov-config')return;
+    if(d.model) AI.model=d.model;
+    if(d.provider) AI.provider=d.provider;
+    if(typeof d.key==='string'){ AI.key=d.key; AI.on=!!d.key; try{syncAI();}catch(_){} }
+    if(typeof d.on==='boolean'){ AI.on=d.on&&!!AI.key; try{syncAI();}catch(_){} }
+  });
+  // let the parent know this pane is ready
+  try{ if(window.parent!==window) window.parent.postMessage({type:'gov-ready',label:L||''},'*'); }catch(_){}
+})();
+
+
+</script>
+</body>
+</html>
